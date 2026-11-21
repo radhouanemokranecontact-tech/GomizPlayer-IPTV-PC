@@ -3883,11 +3883,48 @@ function bindGlobal() {
       actions.appendChild(makeButton(t('download') || 'Download', {
         cls: 'btn btn-primary',
         onClick: async () => {
-          closeModal();
+          // Keep the modal open: progress events replace it with a progress view.
           try { await window.api.updates.download(); } catch (_) {}
         }
       }));
       openModalWithActions(wrap, actions);
+    });
+  }
+
+  // Persistent progress UI — GitHub downloads can take a while, so always show %.
+  let updateProgressNode = null;
+  function showUpdateProgress(pct) {
+    if (!updateProgressNode || !updateProgressNode.isConnected) {
+      const wrap = el('div');
+      wrap.appendChild(el('h2', null, t('update_downloading') || 'Downloading update'));
+      const msg = el('p', 'lead', '');
+      wrap.appendChild(msg);
+      const actions = el('div', 'modal-actions');
+      actions.appendChild(makeButton(t('cancel') || 'Close', { cls: 'btn btn-ghost', onClick: () => closeModal() }));
+      openModalWithActions(wrap, actions);
+      updateProgressNode = msg;
+    }
+    updateProgressNode.textContent = (t('update_downloading') || 'Downloading update') + ' — ' + (pct || 0) + '%';
+  }
+
+  if (!window.__novaUpdateProgressBound && window.api.updates && window.api.updates.onStatus) {
+    window.__novaUpdateProgressBound = true;
+    window.api.updates.onStatus((s) => {
+      if (!s) return;
+      if (s.status === 'downloading') {
+        showUpdateProgress(s.progress || 0);
+      } else if (s.status === 'downloaded') {
+        const wrap = el('div');
+        wrap.appendChild(el('h2', null, t('update_ready') || 'Update ready to install'));
+        wrap.appendChild(el('p', 'lead', (t('update_ready') || 'Update ready') + (s.version ? (' v' + s.version) : '')));
+        const actions = el('div', 'modal-actions');
+        actions.appendChild(makeButton(t('install_update') || 'Install & restart', {
+          cls: 'btn btn-primary',
+          onClick: () => { window.api.updates.install(); }
+        }));
+        actions.appendChild(makeButton(t('cancel') || 'Close', { cls: 'btn btn-ghost', onClick: () => closeModal() }));
+        openModalWithActions(wrap, actions);
+      }
     });
   }
 
