@@ -553,9 +553,19 @@ function ensurePlayer() {
     onFavorite: (item) => { toggleFavorite(item); if (player) player.updateFavBtn(); },
     isFavorite: (item) => isFavorite(item && item.key),
     onEpg: () => { openGuide(); },
-    onClose: () => {
-      updateChrome();
-      if (state.route === 'home' || state.route === 'favorites') render();
+    onClose: (item) => {
+      // Live TV / Favorites receiver has no separate page: if the stream was
+      // live, return to that list instead of leaving the user on Home.
+      const wasLive = !!(item && isLiveKind(item));
+      if (wasLive && (state.route === 'home' || state.route === 'favorites')) {
+        // Set the route directly: navigate('live') would re-open the receiver.
+        state.route = state.liveEntry === 'favorites' ? 'favorites' : 'live';
+        render();
+        updateChrome();
+      } else {
+        updateChrome();
+        if (state.route === 'home' || state.route === 'favorites') render();
+      }
     }
   });
   player.applySettings(state.settings);
