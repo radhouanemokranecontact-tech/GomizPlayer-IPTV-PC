@@ -107,6 +107,9 @@ function assertTrustedSender(event) {
   try {
     const url = event && event.senderFrame && event.senderFrame.url ? String(event.senderFrame.url) : '';
     if (url === INDEX_URL || url.startsWith(INDEX_URL + '#') || url.startsWith(INDEX_URL + '?')) return;
+    // Packaged (asar) builds load the renderer from a slightly different file:// path.
+    // Accept any local file URL that resolves to our own renderer/index.html.
+    if (/^file:\/\/\/.*[\\/]renderer[\\/]index\.html($|[?#])/i.test(url)) return;
   } catch (_) {}
   throw new Error('Untrusted sender');
 }
