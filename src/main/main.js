@@ -1298,10 +1298,26 @@ function registerIpc() {
     } catch (_) {}
     try { autoUpdater.quitAndInstall(false, true); return true; } catch (_) { return false; }
   });
+  // Verify the signed update manifest before downloading anything.
+  async function verifyUpdateManifest() {
+    try {
+      const { verify } = require('./manifest-verify');
+      const url = 'https://raw.githubusercontent.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/main/RELEASE_MANIFEST.yml';
+      const res = await fetch(url);
+      if (!res.ok) return { ok: false, reason: 'manifest-unreachable' };
+      return verify(await res.text());
+    } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
+  }
+
   // User-initiated download (no automatic download of unsigned updates)
   ipcMain.handle('update:download', async (event) => {
     assertTrustedSender(event);
     if (!autoUpdater) return { ok: false, error: 'unavailable' };
+    const v = await verifyUpdateManifest();
+    if (!v.ok) {
+      sendUpdateStatus({ status: 'error', message: '' });
+      return { ok: false, error: 'manifest-verification-failed: ' + v.reason };
+    }
     try {
       await autoUpdater.downloadUpdate();
       return { ok: true };

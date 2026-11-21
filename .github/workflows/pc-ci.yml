@@ -39,6 +39,9 @@ jobs:
       - name: Update guard (rollback safety)
         run: npm run test:update-guard
 
+      - name: Signed update manifest verification
+        run: npm run test:manifest-signature
+
       - name: Secrets integration (Electron)
         run: npm run test:secrets
 

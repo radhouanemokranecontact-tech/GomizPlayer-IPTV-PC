@@ -1,0 +1,12 @@
+version: 1.0.13
+files:
+  - url: GomizPlayer-IPTV-Setup-1.0.13.exe
+    sha512: ol0ld+vKq0xuE+ZqB4jg9k2sVjrgGdziKLKZmXvEf5VYylxCjCKQKnNxt5jybeU5L0Of6mM6pKKraXXOa3x3Ig==
+    size: 151044342
+path: GomizPlayer-IPTV-Setup-1.0.13.exe
+sha512: ol0ld+vKq0xuE+ZqB4jg9k2sVjrgGdziKLKZmXvEf5VYylxCjCKQKnNxt5jybeU5L0Of6mM6pKKraXXOa3x3Ig==
+releaseDate: '2026-11-21T14:07:15.147Z'
+signature: mpQrm6QD2MI5WP9IBBCiWbq8ItfEdqXxC7P/htQz03sZ5ZEAIlwV3XQ3YQElxBS84swEy9pfcxATD5CwrVmOAg==
+signatures:
+  - keyId: 2f5e8004ace29b1bc28f460c1c14b6b7d4a294ddf27eb79b0777da9317d33ddb
+    signature: mpQrm6QD2MI5WP9IBBCiWbq8ItfEdqXxC7P/htQz03sZ5ZEAIlwV3XQ3YQElxBS84swEy9pfcxATD5CwrVmOAg==
