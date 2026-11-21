@@ -56,6 +56,7 @@
 ### 4) حدود معروفة (صدقاً)
 - لا Catch-up كامل / Multiview / Stalker / Chromecast/DLNA (مؤجّلة — `ROADMAP.md`).
 - لا قنوات beta ولا rollout تدريجي.
+- **DASH (.mpd) مدعوم جزئياً فقط** — الرابط يُكتشف لكن التشغيل الكامل غير مضمون؛ لا يوجد دعم DRM فعلي (Widevine/PlayReady/FairPlay) على PC. يُنصح بـ HLS أو MP4 للبث الموثوق.
 - المُثبّت 144MB مقصود (تشغيل مستقل بالكامل، بلا web installer — انظر README).
 - التوقيع التجاري (Authenticode) يحتاج شهادة مدفوعة — لم يُنفّذ.
 
