@@ -14,7 +14,8 @@
     "test:secrets": "node node_modules/electron/cli.js tools/test-secrets.js",
     "test:secrets:audit": "node tools/test-secrets-audit.js",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "postdist": "node scripts/organize-dist.js"
   },
   "dependencies": {
     "electron-updater": "6.8.11",
