@@ -13,6 +13,9 @@ out/
 *.msi
 *.appx
 
+# Runtime data
+tools/telemetry-server/data/
+
 # Secrets / local config
 .env
 .env.*
