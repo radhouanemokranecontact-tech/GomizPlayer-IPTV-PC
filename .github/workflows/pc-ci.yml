@@ -36,6 +36,9 @@ jobs:
       - name: Backup / restore
         run: npm run test:backup
 
+      - name: Update guard (rollback safety)
+        run: npm run test:update-guard
+
       - name: Secrets integration (Electron)
         run: npm run test:secrets
 

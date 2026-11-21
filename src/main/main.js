@@ -234,9 +234,12 @@ if (SMOKE || SCREENSHOTS || STREAM_SMOKE || DOWNLOAD_SMOKE) {
   } catch (_) {}
 }
 
+const { UpdateGuard } = require('./update-guard');
+
 let store = null;
 let downloads = null;
 let win = null;
+let updateGuard = null;
 let updateState = { status: 'idle', version: '', progress: 0, message: '' };
 let updatePromptShown = false;
 
@@ -672,6 +675,21 @@ function createWindow() {
   });
 
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+
+  // Update guard: renderer becoming ready proves the current version is healthy.
+  win.webContents.once('did-finish-load', () => {
+    if (updateGuard) {
+      try { updateGuard.noteHealthy(app.getVersion()); } catch (_) {}
+    }
+  });
+  // If the renderer throws during startup, count it toward a possible rollback.
+  win.webContents.on('render-process-gone', () => {
+    if (updateGuard) {
+      try {
+        if (updateGuard.noteCrash(app.getVersion())) sendUpdateStatus({ status: 'rollback-available', message: '' });
+      } catch (_) {}
+    }
+  });
 
   if (SMOKE) {
     win.webContents.on('console-message', (event) => {
@@ -1246,6 +1264,24 @@ function registerIpc() {
   ipcMain.handle('applock:verify', async (event, pin) => { assertTrustedSender(event); return verifyAppLockPin(pin); });
 
   ipcMain.handle('update:status', (event) => { assertTrustedSender(event); return updateState; });
+
+  ipcMain.handle('update:guard', (event) => {
+    assertTrustedSender(event);
+    try { return { ok: true, state: updateGuard ? updateGuard.getState() : null }; }
+    catch (e) { return { ok: false }; }
+  });
+  ipcMain.handle('update:dismissRollback', (event) => {
+    assertTrustedSender(event);
+    try { if (updateGuard) updateGuard.dismissRollback(); return true; } catch (_) { return false; }
+  });
+  ipcMain.handle('update:snapshot', (event) => {
+    assertTrustedSender(event);
+    try {
+      const backup = store && store.file ? store.file : path.join(app.getPath('userData'), 'gomizplayer.json');
+      const saved = updateGuard ? updateGuard.snapshotBeforeUpdate(backup) : null;
+      return { ok: !!saved, path: saved };
+    } catch (e) { return { ok: false }; }
+  });
   ipcMain.handle('update:check', async (event) => {
     assertTrustedSender(event);
     if (!autoUpdater) return { ok: false, reason: 'unavailable' };
@@ -1255,6 +1291,11 @@ function registerIpc() {
   ipcMain.handle('update:install', (event) => {
     assertTrustedSender(event);
     if (!autoUpdater) return false;
+    // Safety: snapshot app data before any update replaces the running version.
+    try {
+      const backup = store && store.file ? store.file : path.join(app.getPath('userData'), 'gomizplayer.json');
+      if (updateGuard) updateGuard.snapshotBeforeUpdate(backup);
+    } catch (_) {}
     try { autoUpdater.quitAndInstall(false, true); return true; } catch (_) { return false; }
   });
   // User-initiated download (no automatic download of unsigned updates)
@@ -2180,6 +2221,8 @@ async function refreshEpg(id, url) {
 
 app.whenReady().then(async () => {
   store = new Store();
+  updateGuard = new UpdateGuard(app.getPath('userData'), app.getVersion());
+  try { updateGuard.noteStartup(app.getVersion()); } catch (_) {}
   if (SMOKE || SCREENSHOTS) {
     try { store.patchSettings({ consentShown: true, analyticsEnabled: false, crashReportingEnabled: false, telemetryEnabled: false }); } catch (_) {}
   }

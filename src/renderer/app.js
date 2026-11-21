@@ -3243,6 +3243,39 @@ function settingsAbout(panel) {
   intro.appendChild(el('p', 'hint', (t('developer') || 'المبرمج') + ': Radhouane Mokrane'));
   panel.appendChild(intro);
 
+  /* Update safety / rollback status (local only) */
+  if (window.api.updates && window.api.updates.guard) {
+    const guardBox = el('div');
+    guardBox.style.cssText = 'margin:0 0 14px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel)';
+    const guardTitle = el('div', 'list-title', 'Update safety / أمان التحديث');
+    guardBox.appendChild(guardTitle);
+    const guardLine = el('p', 'hint', 'Loading...');
+    guardBox.appendChild(guardLine);
+    const guardBtns = el('div');
+    guardBtns.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+    guardBtns.appendChild(makeButton('Snapshot now', { cls: 'btn btn-ghost btn-sm', onClick: async () => {
+      const r = await window.api.updates.snapshot();
+      toast(r && r.ok ? 'Data snapshot saved before update' : 'Snapshot failed', r && r.ok ? 'ok' : 'err');
+    }}));
+    guardBox.appendChild(guardBtns);
+    panel.appendChild(guardBox);
+    window.api.updates.guard().then((r) => {
+      const st = r && r.state;
+      if (!st) { guardLine.textContent = 'Unavailable'; return; }
+      const snaps = (st.snapshots || []).length;
+      guardLine.textContent = 'Version: ' + (st.lastVersion || '-') +
+        '  ·  Last good: ' + (st.lastGoodVersion || '-') +
+        '  ·  Crashes: ' + (Number(st.crashes) || 0) +
+        '  ·  Snapshots: ' + snaps;
+      if (Number(st.crashes) >= 2 && st.previousVersion) {
+        guardBtns.appendChild(makeButton('Dismiss rollback warning', { cls: 'btn btn-ghost btn-sm', onClick: async () => {
+          await window.api.updates.dismissRollback();
+          guardLine.textContent += ' (dismissed)';
+        }}));
+      }
+    }).catch(() => { guardLine.textContent = 'Unavailable'; });
+  }
+
   const contacts = el('div', 'list');
   contacts.style.marginBottom = '14px';
   const contactRows = [

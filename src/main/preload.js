@@ -68,7 +68,10 @@ contextBridge.exposeInMainWorld('api', {
       const handler = (_e, payload) => cb(payload);
       ipcRenderer.on('update:available', handler);
       return () => ipcRenderer.removeListener('update:available', handler);
-    }
+    },
+    guard: () => invoke('update:guard'),
+    dismissRollback: () => invoke('update:dismissRollback'),
+    snapshot: () => invoke('update:snapshot')
   },
 
   files: {
