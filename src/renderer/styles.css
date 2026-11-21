@@ -2014,3 +2014,32 @@ html[data-perf="low"] * { box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important; }
 
 /* Render only visible cards; defer layout/paint of off-screen cards. */
 .card { content-visibility: auto; contain-intrinsic-size: 0 320px; }
+
+
+/* ============ Dynamic widget backgrounds (time / weather / prayer) ============ */
+.wc-card { transition: background 1.2s ease, box-shadow 1.2s ease; }
+.wc-card[data-bg]::before { background: linear-gradient(180deg, rgba(255,255,255,0.13) 0%, transparent 62%); }
+.wc-card[data-bg="dawn"]       { background: linear-gradient(135deg, #3b2a52 0%, #a5505a 52%, #e5965c 100%); }
+.wc-card[data-bg="day"]        { background: linear-gradient(135deg, #123e63 0%, #237cb0 58%, #74c9e8 100%); }
+.wc-card[data-bg="sunset"]     { background: linear-gradient(135deg, #4d2341 0%, #b4503c 55%, #efa34d 100%); }
+.wc-card[data-bg="night"]      { background: linear-gradient(135deg, #080f26 0%, #16244a 58%, #2c3d66 100%); }
+.wc-card[data-bg="clear"]      { background: linear-gradient(135deg, #0b5385 0%, #1e9fd0 58%, #86dcf2 100%); }
+.wc-card[data-bg="cloudy"]     { background: linear-gradient(135deg, #303d52 0%, #5b6d88 58%, #a4b3c8 100%); }
+.wc-card[data-bg="rain"]       { background: linear-gradient(135deg, #10283f 0%, #27577d 58%, #4d90b8 100%); }
+.wc-card[data-bg="snow"]       { background: linear-gradient(135deg, #38536f 0%, #7d9ab8 58%, #dbeaf5 100%); }
+.wc-card[data-bg="fog"]        { background: linear-gradient(135deg, #333d49 0%, #65717f 58%, #aeb9c5 100%); }
+.wc-card[data-bg="thunder"]    { background: linear-gradient(135deg, #17132e 0%, #392a55 55%, #65507e 100%); }
+.wc-card[data-bg="prayer"]     { background: linear-gradient(135deg, #0d3634 0%, #1d6a5d 58%, #4ba88d 100%); }
+.wc-card[data-bg="prayer-night"] { background: linear-gradient(135deg, #0b2430 0%, #164a54 58%, #2f8a7c 100%); }
+.wc-card[data-bg="prayer-near"] {
+  background: linear-gradient(135deg, #4a2c11 0%, #a96a1b 55%, #f2c64e 100%);
+  box-shadow: 0 0 34px rgba(242,198,78,0.42), inset 0 0 22px rgba(242,198,78,0.22);
+}
+.wc-card[data-bg="prayer-near"] .wc-tag-dot { animation-duration: 0.9s; }
+@keyframes wcSheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.wc-card[data-bg]::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,0.12) 50%, transparent 65%);
+  background-size: 220% 100%; animation: wcSheen 9s linear infinite;
+}
+

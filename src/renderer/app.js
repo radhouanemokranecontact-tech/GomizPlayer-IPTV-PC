@@ -907,6 +907,7 @@ function homeWidget() {
 
   /* ---------- Clock card ---------- */
   const clock = el('section', 'wc-card wc-clock');
+  clock.id = 'wcClockCard';
   clock.appendChild(premiumTag(t('widget_time') || 'Local Time', 'wc-clock-dot'));
   const clockValue = el('div', 'wc-value wc-value-mono', formatTime(new Date()));
   clockValue.id = 'homeClock';
@@ -923,6 +924,7 @@ function homeWidget() {
 
   /* ---------- Weather card ---------- */
   const weather = el('section', 'wc-card wc-weather');
+  weather.id = 'wcWeatherCard';
   weather.appendChild(premiumTag(t('widget_weather') || 'Weather', 'wc-weather-dot'));
   const wRow = el('div', 'wc-row');
   const wGlyph = el('div', 'wc-glyph wc-glyph-svg');
@@ -959,6 +961,7 @@ function homeWidget() {
 
   /* ---------- Prayer card ---------- */
   const prayer = el('section', 'wc-card wc-prayer');
+  prayer.id = 'wcPrayerCard';
   prayer.appendChild(premiumTag(t('widget_prayer') || 'Prayer times', 'wc-prayer-dot'));
   const pRow = el('div', 'wc-row');
   const pGlyph = el('div', 'wc-glyph wc-glyph-svg');
@@ -990,6 +993,7 @@ function homeWidget() {
   wrap.appendChild(clock);
   wrap.appendChild(weather);
   wrap.appendChild(prayer);
+  setTimeout(updateWidgetBackgrounds, 0);
   return wrap;
 }
 
@@ -3700,6 +3704,39 @@ function formatTemp(c) {
   return Math.round(v) + '°C';
 }
 
+function timeOfDayKey(d) {
+  const h = d.getHours() + d.getMinutes() / 60;
+  if (h >= 5 && h < 8) return 'dawn';
+  if (h >= 8 && h < 17) return 'day';
+  if (h >= 17 && h < 20) return 'sunset';
+  return 'night';
+}
+
+function updateWidgetBackgrounds() {
+  const now = new Date();
+  const tod = timeOfDayKey(now);
+  const setBg = (id, bg) => { const n = document.getElementById(id); if (n && n.dataset.bg !== bg) n.dataset.bg = bg; };
+
+  // Clock card follows the time of day.
+  setBg('wcClockCard', tod);
+
+  // Weather card follows the current condition (and night clear sky).
+  const w = state.weather;
+  let wb = tod;
+  if (w && w.icon !== undefined && w.icon !== null) {
+    const b = wmoBucket(Number(w.icon));
+    wb = ({ clear: 'clear', partly: 'cloudy', overcast: 'cloudy', fog: 'fog', rain: 'rain', snow: 'snow', thunder: 'thunder' })[b] || tod;
+    if (wb === 'clear' && tod === 'night') wb = 'night';
+  }
+  setBg('wcWeatherCard', wb);
+
+  // Prayer card shifts to a golden glow when the next prayer is close.
+  const info = getNextPrayerInfo(state.prayer, now);
+  let pb = tod === 'night' ? 'prayer-night' : 'prayer';
+  if (info && info.remaining != null && info.remaining <= 1800) pb = 'prayer-near';
+  setBg('wcPrayerCard', pb);
+}
+
 function startClock() {
   if (state.clockTimer) clearInterval(state.clockTimer);
   const tick = () => {
@@ -3710,6 +3747,7 @@ function startClock() {
     setHand('clkHour', (now.getHours() % 12) * 30 + now.getMinutes() * 0.5);
     setHand('clkMin', now.getMinutes() * 6 + now.getSeconds() * 0.1);
     setHand('clkSec', now.getSeconds() * 6);
+    updateWidgetBackgrounds();
     const dateEl = document.getElementById('homeClockDate');
     if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
     updatePrayerCountdown();
