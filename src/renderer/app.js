@@ -3259,6 +3259,19 @@ function settingsAbout(panel) {
     }}));
     guardBox.appendChild(guardBtns);
     panel.appendChild(guardBox);
+    const diagBtn = makeButton('View recent errors', { cls: 'btn btn-ghost btn-sm', onClick: async () => {
+      const r = await window.api.diagnostics.tail(15);
+      const lines = r && r.lines ? r.lines : [];
+      const box = el('div');
+      box.style.cssText = 'max-height:360px;overflow:auto;background:#080b12;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:10px;font:11px monospace;white-space:pre-wrap;word-break:break-all';
+      box.textContent = lines.length ? lines.join('\n') : 'No local errors recorded.';
+      const wrap = el('div');
+      wrap.appendChild(el('h2', null, 'Local diagnostics / التشخيص المحلي'));
+      wrap.appendChild(el('p', 'lead', ' محفوظة على جهازك فقط — لا تُرسل لأي خادم. / Stored on this device only — never sent to a server.'));
+      wrap.appendChild(box);
+      openModal(wrap);
+    }});
+    guardBtns.appendChild(diagBtn);
     window.api.updates.guard().then((r) => {
       const st = r && r.state;
       if (!st) { guardLine.textContent = 'Unavailable'; return; }
@@ -4144,9 +4157,17 @@ function bindGlobal() {
 
   window.addEventListener('error', (e) => {
     window.__novaLastError = e.message || String(e.error || 'script error');
+    try {
+      window.api.diagnostics.log('renderer-error', {
+        message: window.__novaLastError,
+        source: e.filename || '',
+        line: e.lineno || 0
+      });
+    } catch (_) {}
   });
   window.addEventListener('unhandledrejection', (e) => {
     window.__novaLastError = String((e.reason && e.reason.message) || e.reason || 'unhandled rejection');
+    try { window.api.diagnostics.log('renderer-rejection', { message: window.__novaLastError }); } catch (_) {}
   });
 }
 

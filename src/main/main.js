@@ -1944,6 +1944,22 @@ function registerIpc() {
     return result;
   });
 
+  ipcMain.handle('app:diagnosticsLog', (event, kind, extra) => {
+    assertTrustedSender(event);
+    // Local-only: append to app.log. Never sent anywhere, even if telemetry is on.
+    try { logEvent('error', String(kind || 'renderer-error'), extra || {}); return true; }
+    catch (_) { return false; }
+  });
+  ipcMain.handle('app:diagnosticsTail', (event, count) => {
+    assertTrustedSender(event);
+    try {
+      const file = path.join(logsDir(), 'app.log');
+      if (!fs.existsSync(file)) return { ok: true, lines: [] };
+      const lines = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
+      return { ok: true, lines: lines.slice(-Math.min(200, Math.max(1, Number(count) || 50))) };
+    } catch (_) { return { ok: false, lines: [] }; }
+  });
+
   ipcMain.handle('app:exportDiagnostics', async (event) => {
     assertTrustedSender(event);
     const res = await dialog.showSaveDialog(win, {
@@ -1959,7 +1975,14 @@ function registerIpc() {
       app: { version: app.getVersion(), electron: process.versions.electron, chrome: process.versions.chrome, platform: process.platform },
       settings,
       sourcesCount: (store.data.sources || []).length,
-      epgCount: ((store.settings && store.settings.epgUrls) || []).length
+      epgCount: ((store.settings && store.settings.epgUrls) || []).length,
+      updateGuard: updateGuard ? updateGuard.getState() : null,
+      recentLogs: (() => {
+        try {
+          const f = path.join(logsDir(), 'app.log');
+          return fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).slice(-100) : [];
+        } catch (_) { return []; }
+      })()
     };
     fs.writeFileSync(res.filePath, JSON.stringify(payload, null, 2), 'utf8');
     return { ok: true, file: res.filePath };

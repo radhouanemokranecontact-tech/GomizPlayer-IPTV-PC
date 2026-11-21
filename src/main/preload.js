@@ -51,7 +51,9 @@ contextBridge.exposeInMainWorld('api', {
   },
 
   diagnostics: {
-    export: () => invoke('app:exportDiagnostics')
+    export: () => invoke('app:exportDiagnostics'),
+    log: (kind, extra) => invoke('app:diagnosticsLog', kind, extra),
+    tail: (count) => invoke('app:diagnosticsTail', count)
   },
 
   updates: {
