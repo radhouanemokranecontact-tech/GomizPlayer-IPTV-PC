@@ -15,7 +15,8 @@ contextBridge.exposeInMainWorld('api', {
 
   sources: {
     list: () => invoke('sources:list'),
-  account: (id) => invoke('sources:account', id),
+    account: (id) => invoke('sources:account', id),
+    setPassword: (id, password) => invoke('sources:setPassword', id, password),
     add: (input) => invoke('sources:add', input),
     update: (id, patch) => invoke('sources:update', { id, patch }),
     remove: (id) => invoke('sources:remove', id),

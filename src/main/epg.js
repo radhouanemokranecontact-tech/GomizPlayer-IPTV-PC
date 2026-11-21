@@ -35,31 +35,58 @@ function parseXmltvTime(value) {
   return ts;
 }
 
+/**
+ * Streaming-friendly XMLTV scan (no catastrophic backtracking on 60MB files).
+ * Instead of one greedy regex across the whole string we locate each
+ * <programme ...> open tag with indexOf and slice only up to its closing tag.
+ */
 function parseEpg(xml) {
   const programmes = [];
-  const re = /<programme\b([^>]*)>([\s\S]*?)<\/programme>/gi;
-  let m;
-  while ((m = re.exec(xml))) {
-    const attrs = m[1];
-    const body = m[2];
+  const text = String(xml || '');
+  const lower = text.toLowerCase();
+  let from = 0;
+  let guard = 0;
+  while (programmes.length < 200000 && guard++ < 500000) {
+    const open = lower.indexOf('<programme', from);
+    if (open < 0) break;
+    const gt = text.indexOf('>', open);
+    if (gt < 0) break;
+    const close = lower.indexOf('</programme>', gt);
+    if (close < 0) break;
+    const attrs = text.slice(open, gt);
+    const body = text.slice(gt + 1, close);
+
     const attr = (name) => {
-      const mm = attrs.match(new RegExp(`${name}="([^"]*)"`, 'i'));
-      return mm ? decodeEntities(mm[1]) : '';
+      const needle = name.toLowerCase() + '="';
+      const la = attrs.toLowerCase();
+      const i = la.indexOf(needle);
+      if (i < 0) return '';
+      const s = i + needle.length;
+      const e = attrs.indexOf('"', s);
+      return e < 0 ? '' : decodeEntities(attrs.slice(s, e));
     };
-    const start = parseXmltvTime(attr('start'));
-    const stop = parseXmltvTime(attr('stop'));
-    const titleMatch = body.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const descMatch = body.match(/<desc[^>]*>([\s\S]*?)<\/desc>/i);
-    const catMatch = body.match(/<category[^>]*>([\s\S]*?)<\/category>/i);
+    const tagText = (name) => {
+      const lb = body.toLowerCase();
+      const startTag = '<' + name;
+      let pos = lb.indexOf(startTag);
+      if (pos < 0) return '';
+      const sgt = body.indexOf('>', pos);
+      if (sgt < 0) return '';
+      const endTag = '</' + name + '>';
+      const end = lb.indexOf(endTag, sgt);
+      if (end < 0) return '';
+      return stripTags(body.slice(sgt + 1, end));
+    };
+
     programmes.push({
       channel: attr('channel'),
-      start,
-      stop,
-      title: titleMatch ? stripTags(titleMatch[1]) : '',
-      desc: descMatch ? stripTags(descMatch[1]) : '',
-      category: catMatch ? stripTags(catMatch[1]) : ''
+      start: parseXmltvTime(attr('start')),
+      stop: parseXmltvTime(attr('stop')),
+      title: tagText('title'),
+      desc: tagText('desc'),
+      category: tagText('category')
     });
-    if (programmes.length >= 200000) break;
+    from = close + 12; // length of '</programme>'
   }
   return programmes;
 }

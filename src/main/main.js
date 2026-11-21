@@ -1378,6 +1378,17 @@ function registerIpc() {
     });
   });
 
+  // Re-enter credentials after a failed decrypt (e.g. restored backup on a new PC).
+  ipcMain.handle('sources:setPassword', async (event, id, password) => {
+    assertTrustedSender(event);
+    try {
+      const src = store.sources().find((s) => s.id === id);
+      if (!src || src.kind !== 'xtream') return { ok: false };
+      const enc = await secrets.encryptSecret(String(password || ''));
+      store.updateSource(id, { password: '', passwordEnc: enc, passwordEncV: 2 });
+      return { ok: true };
+    } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+  });
   ipcMain.handle('sources:account', async (event, id) => {
     assertTrustedSender(event);
     const source = store.sources().find((s) => s.id === id);

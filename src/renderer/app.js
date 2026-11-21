@@ -1888,6 +1888,18 @@ function renderSources() {
           }
         }
       }));
+      if (source.kind === 'xtream') {
+        actions.appendChild(makeButton('', {
+          cls: 'icon-btn', icon: 'lock', title: 'Re-enter password / إعادة إدخال كلمة المرور',
+          onClick: async () => {
+            const pw = await promptModal('Re-enter password',
+              'Enter the Xtream password again (after restoring a backup on another PC):', '', true);
+            if (pw == null) return;
+            const r = await window.api.sources.setPassword(source.id, pw);
+            toast(r && r.ok ? 'Password saved' : 'Failed', r && r.ok ? 'ok' : 'err');
+          }
+        }));
+      }
       actions.appendChild(makeButton('', {
         cls: 'icon-btn', icon: 'trash', title: t('delete'),
         onClick: async () => {
@@ -2557,13 +2569,13 @@ function settingsGeneral(panel) {
   panel.appendChild(info);
 }
 
-function promptModal(title, label, def) {
+function promptModal(title, label, def, secret = false) {
   return new Promise((resolve) => {
     const wrap = el('div');
     wrap.appendChild(el('h2', null, title));
     wrap.appendChild(el('p', 'lead', label));
     const input = el('input');
-    input.type = 'text';
+    input.type = secret ? 'password' : 'text';
     input.className = 'input';
     input.autocomplete = 'off';
     if (def) input.value = def;
