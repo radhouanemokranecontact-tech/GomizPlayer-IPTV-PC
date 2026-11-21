@@ -3003,8 +3003,12 @@ async function settingsStorage(panel) {
     if (r && r.ok) { state.settings = await window.api.settings.get(); await refreshLibrary(); await loadAllItems(); toast(t('backup_imported'), 'ok'); render(); }
     else if (r && r.error) toast(r.error, 'err');
   }}));
+  bBtns.appendChild(makeButton('Back up now', { cls: 'btn btn-ghost btn-sm', icon: 'download', onClick: async () => {
+    const r = await window.api.backup.now();
+    toast(r && r.ok ? ('Backup created: ' + r.name) : 'Backup failed', r && r.ok ? 'ok' : 'err');
+  }}));
   panel.appendChild(bBtns);
-
+ 
   panel.appendChild(el('h3', null, t('startup_cleanup')));
   panel.appendChild(el('p', 'hint', t('startup_cleanup_hint')));
   panel.appendChild(toggleRow(

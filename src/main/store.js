@@ -112,8 +112,58 @@ class Store {
   constructor() {
     this.dir = app.getPath('userData');
     this.file = path.join(this.dir, 'gomizplayer.json');
+    this.backupDir = path.join(this.dir, 'backups');
+    this._lastBackupAt = 0;
+    this.recoveredFromBackup = null;
+    try { fs.mkdirSync(this.backupDir, { recursive: true }); } catch (_) {}
     this.data = this.load();
     this.migrate();
+  }
+
+  // ---------- backup / recovery ----------
+  listBackups() {
+    try {
+      return fs.readdirSync(this.backupDir)
+        .filter(n => n.startsWith('gomizplayer-') && n.endsWith('.json'))
+        .map(n => {
+          const st = fs.statSync(path.join(this.backupDir, n));
+          return { name: n, sizeBytes: st.size, modifiedAt: st.mtimeMs };
+        })
+        .sort((a, b) => b.modifiedAt - a.modifiedAt);
+    } catch (_) { return []; }
+  }
+
+  backupNow() {
+    try {
+      this._rotateBackups();
+      const d = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const name = 'gomizplayer-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) +
+        '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds()) + '.json';
+      const target = path.join(this.backupDir, name);
+      const tmp = target + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf8');
+      fs.renameSync(tmp, target);
+      this._lastBackupAt = Date.now();
+      return name;
+    } catch (_) { return null; }
+  }
+
+  _rotateBackups() {
+    const all = this.listBackups();
+    all.slice(3).forEach(b => { try { fs.unlinkSync(path.join(this.backupDir, b.name)); } catch (_) {} });
+  }
+
+  restoreBackup(name) {
+    try {
+      const safe = path.resolve(this.backupDir, name);
+      if (path.dirname(safe) !== path.resolve(this.backupDir)) throw new Error('Invalid backup');
+      const raw = JSON.parse(fs.readFileSync(safe, 'utf8'));
+      this.backupNow(); // keep current data before restoring
+      this.data = mergeDefaults(DEFAULTS, raw);
+      this.save();
+      return true;
+    } catch (_) { return false; }
   }
 
   migrate() {
@@ -163,9 +213,16 @@ class Store {
         return mergeDefaults(DEFAULTS, raw);
       }
     } catch (err) {
-      try {
-        fs.copyFileSync(this.file, this.file + '.corrupt');
-      } catch (_) { /* ignore */ }
+      // main file is corrupt: keep it for forensics, then try newest backup
+      try { fs.copyFileSync(this.file, this.file + '.corrupt'); } catch (_) {}
+      const backups = this.listBackups();
+      if (backups.length) {
+        try {
+          const raw = JSON.parse(fs.readFileSync(path.join(this.backupDir, backups[0].name), 'utf8'));
+          this.recoveredFromBackup = backups[0].name;
+          return mergeDefaults(DEFAULTS, raw);
+        } catch (_) {}
+      }
     }
     return clone(DEFAULTS);
   }
@@ -175,6 +232,8 @@ class Store {
     fs.mkdirSync(this.dir, { recursive: true });
     fs.writeFileSync(tmp, JSON.stringify(this.data, null, 2), 'utf8');
     fs.renameSync(tmp, this.file);
+    // Rolling backup, at most once every 30 minutes.
+    if (Date.now() - this._lastBackupAt >= 30 * 60 * 1000) this.backupNow();
     return true;
   }
 

@@ -1587,6 +1587,16 @@ function registerIpc() {
   });
 
   // ---------- backup / storage ----------
+  ipcMain.handle('app:backupNow', (event) => {
+    assertTrustedSender(event);
+    try { const name = store.backupNow(); return name ? { ok: true, name } : { ok: false }; }
+    catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+  });
+  ipcMain.handle('app:listBackups', (event) => {
+    assertTrustedSender(event);
+    try { return { ok: true, backups: store.listBackups() }; }
+    catch (e) { return { ok: false, backups: [] }; }
+  });
   ipcMain.handle('app:exportBackup', async (event) => {
     assertTrustedSender(event);
     const res = await dialog.showSaveDialog(win, {

@@ -33,6 +33,9 @@ jobs:
       - name: Secrets audit (no Electron required)
         run: npm run test:secrets:audit
 
+      - name: Backup / restore
+        run: npm run test:backup
+
       - name: Secrets integration (Electron)
         run: npm run test:secrets
 

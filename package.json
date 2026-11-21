@@ -1,6 +1,6 @@
 {
   "name": "gomizplayer-iptv",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "GomizPlayer IPTV — neutral IPTV/VOD player (Electron).",
   "main": "src/main/main.js",
   "author": "",
@@ -13,6 +13,7 @@
     "test:classification": "node tools/test-classification.js",
     "test:secrets": "node node_modules/electron/cli.js tools/test-secrets.js",
     "test:secrets:audit": "node tools/test-secrets-audit.js",
+    "test:backup": "node tools/test-backup.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
     "postdist": "node scripts/organize-dist.js"

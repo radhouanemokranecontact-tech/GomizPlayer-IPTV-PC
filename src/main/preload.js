@@ -33,7 +33,9 @@ contextBridge.exposeInMainWorld('api', {
 
   backup: {
     export: () => invoke('app:exportBackup'),
-    import: () => invoke('app:importBackup')
+    import: () => invoke('app:importBackup'),
+    now: () => invoke('app:backupNow'),
+    list: () => invoke('app:listBackups')
   },
 
   storage: {
