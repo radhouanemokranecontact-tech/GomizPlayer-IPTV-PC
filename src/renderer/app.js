@@ -3218,7 +3218,7 @@ function settingsAbout(panel) {
       downloading: (t('update_downloading') || 'Downloading update') + ver + (st.progress ? (' — ' + st.progress + '%') : ''),
       downloaded: (t('update_ready') || 'Update ready to install') + ver,
       none: (state.info ? state.info.version : '') + ' — ' + t('up_to_date'),
-      error: (t('update_error') || 'Update error') + (st.message ? (': ' + st.message) : ''),
+      error: '',
       idle: ''
     };
     upStatus.textContent = map[st.status] || '';
@@ -3235,7 +3235,7 @@ function settingsAbout(panel) {
       if (!s) return;
       if (s.status === 'available') toast((t('update_available') || 'Update available') + (s.version ? (' v' + s.version) : ''), 'ok');
       else if (s.status === 'downloaded') toast((t('update_ready') || 'Update ready to install') + (s.version ? (' v' + s.version) : ''), 'ok');
-      else if (s.status === 'error' && s.message) toast(s.message, 'err');
+      // update errors are silent in the UI (details kept in logs only)
       else if (s.status === 'none') toast(t('up_to_date'), 'ok');
     });
   } else if (window.api.updates && window.api.updates.status) {
@@ -3866,8 +3866,30 @@ function bindGlobal() {
   });
 
   modalRoot.addEventListener('click', (e) => {
-    if (e.target && e.target.getAttribute('data-close') !== null) closeModal();
+    // Use closest() so clicking the SVG icon inside the X button also closes.
+    if (e.target && e.target.closest && e.target.closest('[data-close]')) closeModal();
   });
+
+  // Automatically offer an available update (including the startup check).
+  if (!window.__novaUpdatePromptBound && window.api.updates && window.api.updates.onAvailable) {
+    window.__novaUpdatePromptBound = true;
+    window.api.updates.onAvailable((info) => {
+      const ver = info && info.version ? (' v' + info.version) : '';
+      const wrap = el('div');
+      wrap.appendChild(el('h2', null, (t('update_available') || 'Update available') + ver));
+      wrap.appendChild(el('p', 'lead', 'A new version is available. Download and install it now? / يتوفر إصدار جديد. هل تريد تنزيله وتثبيته الآن؟'));
+      const actions = el('div', 'modal-actions');
+      actions.appendChild(makeButton(t('cancel') || 'Later', { cls: 'btn btn-ghost', onClick: () => closeModal() }));
+      actions.appendChild(makeButton(t('download') || 'Download', {
+        cls: 'btn btn-primary',
+        onClick: async () => {
+          closeModal();
+          try { await window.api.updates.download(); } catch (_) {}
+        }
+      }));
+      openModalWithActions(wrap, actions);
+    });
+  }
 
   window.api.downloads.onChanged((list) => {
     state.downloads = list;

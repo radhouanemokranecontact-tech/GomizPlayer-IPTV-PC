@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('api', {
       const handler = (_e, payload) => cb(payload);
       ipcRenderer.on('update:status', handler);
       return () => ipcRenderer.removeListener('update:status', handler);
+    },
+    onAvailable: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('update:available', handler);
+      return () => ipcRenderer.removeListener('update:available', handler);
     }
   },
 

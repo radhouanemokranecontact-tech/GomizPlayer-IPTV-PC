@@ -238,10 +238,20 @@ let store = null;
 let downloads = null;
 let win = null;
 let updateState = { status: 'idle', version: '', progress: 0, message: '' };
+let updatePromptShown = false;
 
 function sendUpdateStatus(patch) {
+  const prev = updateState.status;
   updateState = Object.assign({}, updateState, patch || {});
-  if (win && !win.isDestroyed()) win.webContents.send('update:status', updateState);
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('update:status', updateState);
+    // Pop up once per newly-detected update (including the check on startup).
+    if (updateState.status === 'available' && prev !== 'available' && !updatePromptShown) {
+      updatePromptShown = true;
+      win.webContents.send('update:available', { version: updateState.version || '' });
+    }
+    if (updateState.status === 'none' || updateState.status === 'idle') updatePromptShown = false;
+  }
 }
 
 function setupAutoUpdates() {
