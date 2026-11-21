@@ -1662,44 +1662,18 @@ function registerIpc() {
       filters: [{ name: 'JSON', extensions: ['json'] }]
     });
     if (res.canceled || !res.filePath) return { canceled: true };
-    let includePasswords = false;
-    try {
-      const ans = await dialog.showMessageBox(win, {
-        type: 'question',
-        buttons: ['لا / No', 'نعم / Yes'],
-        defaultId: 0,
-        cancelId: 0,
-        title: 'تصدير نسخة احتياطية / Export Backup',
-        message: 'هل تريد تضمين كلمات المرور في النسخة الاحتياطية؟\nInclude passwords in backup?',
-        detail: 'الافتراضي: لا. اختيار "لا" يحذف أسماء المستخدمين وكلمات المرور من المصادر. اختيار "نعم" سيصدّر كلمات المرور كنص واضح داخل الملف؛ احفظ الملف في مكان آمن.\nDefault: No. Choosing No removes usernames and passwords from sources. Choosing Yes exports passwords in plaintext inside the file; keep it secure.'
-      });
-      includePasswords = ans && ans.response === 1;
-    } catch (_) { includePasswords = false; }
+    // Security: exported backups NEVER contain credentials (plain or encrypted).
+    // Credentials stay in the OS-protected store and are re-entered after import.
     const payload = store.exportBackup();
     try {
       if (Array.isArray(payload.sources)) {
-        if (!includePasswords) {
-          payload.sources = payload.sources.map((src) => {
-            const o = Object.assign({}, src);
-            delete o.password;
-            delete o.passwordEnc;
-            delete o.username;
-            return o;
-          });
-        } else {
-          const mapped = [];
-          for (const src of payload.sources) {
-            const o = Object.assign({}, src);
-            try {
-              if (o.passwordEnc) {
-                o.password = await decryptSourcePassword(o);
-              }
-            } catch (_) {}
-            delete o.passwordEnc;
-            mapped.push(o);
-          }
-          payload.sources = mapped;
-        }
+        payload.sources = payload.sources.map((src) => {
+          const o = Object.assign({}, src);
+          delete o.password;
+          delete o.passwordEnc;
+          delete o.username;
+          return o;
+        });
       }
     } catch (_) {}
     fs.writeFileSync(res.filePath, JSON.stringify(payload, null, 2), 'utf8');

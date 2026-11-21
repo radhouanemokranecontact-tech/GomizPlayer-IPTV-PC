@@ -928,6 +928,14 @@ function widgetRefreshButton() {
   return b;
 }
 
+/** Hide Xtream credentials from any URL shown in the UI. */
+function safeDisplayUrl(url) {
+  try {
+    const s = String(url || '');
+    return s.replace(/([?&](?:username|user|password|pass|token|apikey)=)[^&#\s]+/gi, '$1••••');
+  } catch (_) { return String(url || ''); }
+}
+
 function homeWidget() {
   const s = state.settings || {};
   const hour = new Date().getHours();
@@ -1925,7 +1933,7 @@ function renderSources() {
       ico.style.color = 'var(--accent)';
       row.appendChild(ico);
       const main = el('div', 'list-main');
-      main.appendChild(el('div', 'list-title', entry.name || entry.url));
+      main.appendChild(el('div', 'list-title', entry.name || safeDisplayUrl(entry.url)));
       main.appendChild(el('div', 'list-sub', entry.url));
       row.appendChild(main);
       const actions = el('div', 'list-actions');
@@ -1983,6 +1991,12 @@ function openSourceModal(preset, editSource) {
   const isEdit = !!editSource;
   wrap.appendChild(el('h2', null, isEdit ? (t('edit_source') || 'Edit source') : t('add_source')));
   wrap.appendChild(el('p', 'lead', t('no_sources_hint')));
+  // Security warning: plaintext HTTP exposes Xtream credentials on the network.
+  const httpWarn = el('p', 'hint', '⚠ ' + (I18N.lang === 'ar'
+    ? 'روابط http:// غير مشفّرة — قد تظهر بيانات اشتراكك (Xtream) على الشبكة. استخدم https:// إن توفر.'
+    : 'http:// URLs are unencrypted — Xtream credentials may be exposed on the network. Prefer https:// where available.'));
+  httpWarn.style.color = '#e0a030';
+  wrap.appendChild(httpWarn);
 
   const form = el('div', 'form-grid');
 
@@ -2197,7 +2211,7 @@ function renderDownloads() {
   for (const rec of state.downloads) {
     const row = el('div', 'dl-row');
     const main = el('div', 'list-main');
-    main.appendChild(el('div', 'list-title', rec.title || rec.url));
+    main.appendChild(el('div', 'list-title', rec.title || safeDisplayUrl(rec.url)));
     const pct = rec.total > 0 ? Math.min(100, Math.round((rec.received / rec.total) * 100)) : rec.state === 'Complete' ? 100 : 0;
     const info = el('div', 'list-sub', ltr(humanBytes(rec.received) + ' / ' + (rec.total ? humanBytes(rec.total) : '—') + ' · ' + I18N.number(pct) + '%'));
     main.appendChild(info);
@@ -2881,7 +2895,7 @@ async function settingsEpg(panel) {
     for (const entry of entries) {
       const row = el('div', 'list-row');
       const main = el('div', 'list-main');
-      main.appendChild(el('div', 'list-title', entry.name || entry.url));
+      main.appendChild(el('div', 'list-title', entry.name || safeDisplayUrl(entry.url)));
       main.appendChild(el('div', 'list-sub', entry.url));
       row.appendChild(main);
       const actions = el('div', 'list-actions');
