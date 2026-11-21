@@ -2,6 +2,9 @@
 
 [English](#english) | [العربية](#العربية)
 
+📘 **الدليل التقني الشامل:** [TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md) — يشرح التطبيق كما يُستخدم فعلياً، مع كل الميزات والتفاصيل التقنية والحدود المعروفة.
+📘 **Full technical guide:** [TECHNICAL_GUIDE.md](TECHNICAL_GUIDE.md) — what the app really does, internals and known limits.
+
 ## English
 
 Gomiz Player IPTV Desktop is the Windows companion application for the Android TV player. It is built with **Electron** and JavaScript and provides a desktop experience for managing IPTV sources.
