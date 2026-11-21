@@ -2043,3 +2043,25 @@ html[data-perf="low"] * { box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important; }
   background-size: 220% 100%; animation: wcSheen 9s linear infinite;
 }
 
+
+
+
+
+/* ============ Refresh icon inside each widget card ============ */
+.wc-card { position: relative; }
+.wc-refresh {
+  position: absolute; top: 9px; right: 9px; z-index: 3;
+  width: 22px; height: 22px; padding: 0;
+  display: grid; place-items: center;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.24);
+  background: rgba(6, 10, 20, 0.55);
+  color: #ffffff; backdrop-filter: blur(6px);
+  transition: background .25s ease, transform .25s ease, border-color .25s ease;
+}
+.wc-refresh svg { width: 13px; height: 13px; }
+.wc-refresh:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.45); transform: scale(1.08); }
+.wc-refresh:disabled { opacity: 0.75; cursor: default; }
+.wc-refresh.spinning svg { animation: wcSpin .8s linear infinite; }
+@keyframes wcSpin { to { transform: rotate(360deg); } }
+

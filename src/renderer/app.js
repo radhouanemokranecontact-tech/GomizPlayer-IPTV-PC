@@ -899,6 +899,25 @@ function renderWelcome() {
 
 /* ===================== Home ===================== */
 
+function widgetRefreshButton() {
+  const b = el('button', 'wc-refresh');
+  b.type = 'button';
+  const label = t('refresh') || 'Refresh';
+  b.title = label;
+  b.setAttribute('aria-label', label);
+  b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+  b.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (b.disabled) return;
+    b.disabled = true;
+    b.classList.add('spinning');
+    try { await loadLocationWeatherPrayer(); }
+    finally { b.classList.remove('spinning'); b.disabled = false; }
+  });
+  return b;
+}
+
 function homeWidget() {
   const s = state.settings || {};
   const hour = new Date().getHours();
@@ -909,6 +928,7 @@ function homeWidget() {
   const clock = el('section', 'wc-card wc-clock');
   clock.id = 'wcClockCard';
   clock.appendChild(premiumTag(t('widget_time') || 'Local Time', 'wc-clock-dot'));
+  clock.appendChild(widgetRefreshButton());
   const clockValue = el('div', 'wc-value wc-value-mono', formatTime(new Date()));
   clockValue.id = 'homeClock';
   const analogGlyph = el('div', 'wc-glyph wc-glyph-svg');
@@ -926,6 +946,7 @@ function homeWidget() {
   const weather = el('section', 'wc-card wc-weather');
   weather.id = 'wcWeatherCard';
   weather.appendChild(premiumTag(t('widget_weather') || 'Weather', 'wc-weather-dot'));
+  weather.appendChild(widgetRefreshButton());
   const wRow = el('div', 'wc-row');
   const wGlyph = el('div', 'wc-glyph wc-glyph-svg');
   wGlyph.innerHTML = weatherGlyph(state.weather && state.weather.icon, state.weather && state.weather.isDay);
@@ -963,6 +984,7 @@ function homeWidget() {
   const prayer = el('section', 'wc-card wc-prayer');
   prayer.id = 'wcPrayerCard';
   prayer.appendChild(premiumTag(t('widget_prayer') || 'Prayer times', 'wc-prayer-dot'));
+  prayer.appendChild(widgetRefreshButton());
   const pRow = el('div', 'wc-row');
   const pGlyph = el('div', 'wc-glyph wc-glyph-svg');
   pGlyph.innerHTML = mosqueSVG();
