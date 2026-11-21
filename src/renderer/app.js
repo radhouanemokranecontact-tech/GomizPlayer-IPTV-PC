@@ -2398,7 +2398,7 @@ function settingsGeneral(panel) {
   panel.appendChild(el('h3', null, t('general')));
   panel.appendChild(el('p', 'hint', t('language')));
 
-  panel.appendChild(segRow(t('language'), [['en', t('english')], ['fr', t('french')], ['ar', t('arabic')]], state.settings.language || 'en', async (value) => {
+  panel.appendChild(segRow(t('language'), [['en', t('english')], ['ar', t('arabic')]], state.settings.language || 'en', async (value) => {
     await setLanguage(value);
     render();
   }));
@@ -4015,7 +4015,7 @@ function bindGlobal() {
   document.getElementById('quickAddBtn').addEventListener('click', () => openSourceModal());
   document.getElementById('guideBtn').addEventListener('click', openGuide);
   document.getElementById('langBtn').addEventListener('click', async () => {
-    const order = ['en', 'fr', 'ar'];
+    const order = ['en', 'ar'];
     const cur = order.includes(state.settings.language) ? state.settings.language : 'en';
     const next = order[(order.indexOf(cur) + 1) % order.length];
     await setLanguage(next);
@@ -4236,7 +4236,7 @@ async function boot() {
   try {
     window.api.info().then((info) => { state.info = info; }).catch(() => {});
     state.settings = await window.api.settings.get();
-    if (!state.settings || !['en', 'fr', 'ar'].includes(state.settings.language)) state.settings.language = 'en';
+    if (!state.settings || !['en', 'ar'].includes(state.settings.language)) state.settings.language = 'en';
     state.profile = state.settings.profile || 'default';
     try { state.profiles = await window.api.profiles.list(); } catch (_) { state.profiles = ['default']; }
     I18N.init(state.settings.language);

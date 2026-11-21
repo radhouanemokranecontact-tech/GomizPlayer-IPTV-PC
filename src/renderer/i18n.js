@@ -1153,7 +1153,7 @@ const I18N = {
   },
 
   set(lang) {
-    const allowed = ['en', 'fr', 'ar'];
+    const allowed = ['en', 'ar']; // FR removed: only EN/AR are fully translated
     this.lang = allowed.includes(lang) ? lang : 'en';
     this.dir = this.lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = this.lang;
