@@ -94,6 +94,13 @@ const state = {
   loading: true
 };
 
+// Wire extracted widget helpers immediately (state/t/I18N are in scope here).
+if (typeof widgetHelpersInit === 'function') widgetHelpersInit({
+  t: (k) => (typeof window !== 'undefined' && typeof window.t === 'function' ? window.t(k) : k),
+  I18N: (typeof window !== 'undefined' ? window.I18N : null) || { lang: 'en', number: (n) => String(n) },
+  state
+});
+
 function activeProfile() { return (state.settings && state.settings.profile) || state.profile || 'default'; }
 
 let player = null;
@@ -4098,8 +4105,6 @@ function showConsentDialog() {
 
 async function boot() {
   try {
-    // Wire injected deps into extracted widget helpers (t + I18N are globals from i18n.js)
-    if (typeof widgetHelpersInit === 'function') widgetHelpersInit({ t: (k) => t(k), I18N });
     window.api.info().then((info) => { state.info = info; }).catch(() => {});
     state.settings = await window.api.settings.get();
     if (!state.settings || !['en', 'ar'].includes(state.settings.language)) state.settings.language = 'en';

@@ -3,9 +3,11 @@
 // Dependencies (t / I18N) are injected by app.js via init() to avoid globals.
 let t = (k) => k;
 let I18N = { lang: 'en', number: (n) => String(n) };
+let state = { settings: {} };
 function init(deps) {
   if (deps && typeof deps.t === 'function') t = deps.t;
   if (deps && deps.I18N) I18N = deps.I18N;
+  if (deps && deps.state) state = deps.state;
 }
 
 function analogClockSVG() {
