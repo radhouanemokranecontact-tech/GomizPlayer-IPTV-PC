@@ -1,12 +1,12 @@
-version: 1.0.20
+version: 1.0.21
 files:
-  - url: GomizPlayer-IPTV-Setup-1.0.20.exe
-    sha512: WpjiM8rfdOT5wNaVTEzUWikS2ZUREcJ4mPlRv7nDQrSZ66KHDrtDaXhs56wrxLtbwTRRURyZpdy6zeOWUulPvA==
-    size: 151044696
-path: GomizPlayer-IPTV-Setup-1.0.20.exe
-sha512: WpjiM8rfdOT5wNaVTEzUWikS2ZUREcJ4mPlRv7nDQrSZ66KHDrtDaXhs56wrxLtbwTRRURyZpdy6zeOWUulPvA==
-releaseDate: '2026-11-22T15:42:34.431Z'
-signature: 84kTDdFni6XVbnzgCdD4aErkbAxcFi5664CMrN3xB7OtHWB94HkR344LrHpX5Bx0+Ei4VfJopZVmDj5wvdUgBw==
+  - url: GomizPlayer-IPTV-Setup-1.0.21.exe
+    sha512: 37IB8/L302WY63ncXaAJBuOBd7Rl6A5yRj+LIoqh5Q1IjvDWJMveo6n6+EpW2FkiskytDv1UlPPSkk9o6ZAjLg==
+    size: 151042988
+path: GomizPlayer-IPTV-Setup-1.0.21.exe
+sha512: 37IB8/L302WY63ncXaAJBuOBd7Rl6A5yRj+LIoqh5Q1IjvDWJMveo6n6+EpW2FkiskytDv1UlPPSkk9o6ZAjLg==
+releaseDate: '2026-11-22T16:26:00.203Z'
+signature: 9mNq+wKynjcV3nF5UVFEhfeQ1Bgpxue9D5DYJy+Vp2qyzvz2QtdxjRKu7xStuKaiNpHPEdQy/WUqfcFXXercBA==
 signatures:
   - keyId: 2f5e8004ace29b1bc28f460c1c14b6b7d4a294ddf27eb79b0777da9317d33ddb
-    signature: 84kTDdFni6XVbnzgCdD4aErkbAxcFi5664CMrN3xB7OtHWB94HkR344LrHpX5Bx0+Ei4VfJopZVmDj5wvdUgBw==
+    signature: 9mNq+wKynjcV3nF5UVFEhfeQ1Bgpxue9D5DYJy+Vp2qyzvz2QtdxjRKu7xStuKaiNpHPEdQy/WUqfcFXXercBA==
