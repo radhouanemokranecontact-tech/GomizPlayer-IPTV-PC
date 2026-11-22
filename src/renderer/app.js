@@ -1,4 +1,4 @@
-const { init: widgetHelpersInit, analogClockSVG, mosqueSVG, weatherGlyph, weatherDescription, wmoBucket, weatherEmoji, timeOfDayKey, formatCountdown, getNextPrayerInfo, formatTime, formatTemp } = require('./widget-helpers');
+const { init: widgetHelpersInit, analogClockSVG, mosqueSVG, weatherGlyph, weatherDescription, wmoBucket, weatherEmoji, timeOfDayKey, formatCountdown, getNextPrayerInfo, formatTime, formatTemp } = window.WidgetHelpers;
 'use strict';
 
 /* ===================== GomizPlayer IPTV renderer ===================== */

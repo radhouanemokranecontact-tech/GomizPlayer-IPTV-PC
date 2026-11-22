@@ -1,6 +1,7 @@
-'use strict';
-// Extracted widget helpers (refactor sandbox).
-// Dependencies (t / I18N) are injected by app.js via init() to avoid globals.
+/* global window */
+// Extracted widget helpers — loaded as a plain <script> before app.js.
+// Exposed on window.WidgetHelpers; dependencies injected by app.js.
+(function () {
 let t = (k) => k;
 let I18N = { lang: 'en', number: (n) => String(n) };
 let state = { settings: {} };
@@ -184,4 +185,5 @@ function formatTemp(c) {
   return Math.round(v) + '°C';
 }
 
-module.exports = { init, analogClockSVG, mosqueSVG, weatherGlyph, weatherDescription, wmoBucket, weatherEmoji, timeOfDayKey, formatCountdown, getNextPrayerInfo, formatTime, formatTemp };
+window.WidgetHelpers = { init, analogClockSVG, mosqueSVG, weatherGlyph, weatherDescription, wmoBucket, weatherEmoji, timeOfDayKey, formatCountdown, getNextPrayerInfo, formatTime, formatTemp };
+})();
