@@ -271,6 +271,7 @@ class Downloads {
         rec.state = 'Complete';
         rec.total = rec.received;
         rec.dir = targetDir;
+        rec.file = finalPath;
       } else {
         rec.state = 'Failed';
         rec.error = 'Downloaded file is empty or missing';
@@ -355,6 +356,7 @@ class Downloads {
             rec.received = fs.statSync(finalPath).size;
             rec.state = 'Complete';
             rec.dir = targetDir;
+            rec.file = finalPath;
           } else {
             rec.state = 'Failed';
             const tail = String(stderrTail || '').trim().split(/\r?\n/).slice(-3).join(' | ');

@@ -2080,7 +2080,7 @@ html[data-perf="low"] * { box-shadow: 0 2px 6px rgba(0,0,0,0.35) !important; }
 .sidebar > .brand { position: absolute; top: 20px; left: 14px; right: 14px; }
 .sidebar .nav { gap: 12px; }
 .sidebar .nav-sep { margin: 6px 10px; }
-.sidebar-footer { margin-top: 0; }
+.sidebar-footer { margin-top: auto; }
 
 
 
