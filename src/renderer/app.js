@@ -2224,8 +2224,37 @@ function renderRecordings() {
 
 /* ===================== Settings ===================== */
 
+function tabsFindLabel(id) {
+  const map = {
+    general: t('general'), home: t('home_tab'), player: t('player'), subtitles: t('subtitles'),
+    epg: t('guide'), storage: t('storage'), system: t('system'), about: t('about')
+  };
+  return map[id] || '';
+}
+
 function renderSettings() {
-  view.appendChild(pageHead(t('settings'), t('tagline')));
+  // Context header: title, description and back action keep the user oriented.
+  const head = el('div', 'settings-context');
+  const back = el('button', 'btn btn-ghost btn-sm');
+  back.textContent = '‹ ' + (t('back') || 'Back');
+  back.addEventListener('click', () => goBack());
+  const heading = el('div');
+  heading.appendChild(el('h2', 'settings-context-title', t('settings')));
+  const descById = {
+    general: 'Language, theme, appearance and account preferences / اللغة والمظهر والتفضيلات',
+    home: 'Home sections, order and density / أقسام الرئيسية وترتيبها',
+    player: 'Playback, network and hardware / التشغيل والشبكة والعتاد',
+    subtitles: 'Subtitle appearance and timing / مظهر الترجمة وتوقيتها',
+    epg: 'Electronic programme guide sources / مصادر دليل البرامج',
+    storage: 'Storage, backups and cleanup / التخزين والنسخ الاحتياطي',
+    system: 'Diagnostics, updates and safety / التشخيص والتحديثات والأمان',
+    about: 'Version, developer and contact / الإصدار والمطوّر'
+  };
+  const current = tabsFindLabel(state.settingsTab);
+  heading.appendChild(el('p', 'settings-context-desc', descById[state.settingsTab] || current || t('tagline')));
+  head.appendChild(back);
+  head.appendChild(heading);
+  view.appendChild(head);
 
   const layout = el('div', 'settings-layout');
   const menu = el('div', 'settings-menu');
