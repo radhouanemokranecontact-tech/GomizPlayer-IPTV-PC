@@ -567,7 +567,8 @@ function ensurePlayer() {
       const wasLive = !!(item && isLiveKind(item));
       if (wasLive && (state.route === 'home' || state.route === 'favorites')) {
         // Set the route directly: navigate('live') would re-open the receiver.
-        state.route = state.liveEntry === 'favorites' ? 'favorites' : 'live';
+        // Always return to Home when the player closes (even from Favorites).
+        state.route = 'home';
         render();
         updateChrome();
       } else {
@@ -1641,12 +1642,26 @@ function showDetail(item, playlist) {
   actions.appendChild(favBtn);
 
   if (item.kind !== 'live') {
-    actions.appendChild(makeButton(t('download'), {
+    const dlBtn = makeButton(t('download'), {
       cls: 'btn btn-ghost', icon: 'download',
       onClick: async () => {
+        // Instant visual feedback: the button was dead before any response.
+        const original = dlBtn.textContent;
+        dlBtn.textContent = I18N.lang === 'ar' ? 'جارٍ الإضافة…' : 'Adding…';
+        dlBtn.disabled = true;
+        dlBtn.classList.add('busy');
+        toast(I18N.lang === 'ar' ? 'تم بدء التحميل' : 'Download started', 'ok');
         try {
+          // IPC clone-safe payload: plain JSON only (headers copied as plain object)
+          const plainHeaders = {};
+          try {
+            const h = item.headers || {};
+            if (typeof h.forEach === 'function' && typeof h.entries !== 'function') h.forEach((v, k) => { plainHeaders[String(k)] = String(v); });
+            else Object.keys(h).forEach((k) => { plainHeaders[String(k)] = String(h[k]); });
+          } catch (_) {}
           const res = await window.api.downloads.add({
-            title: item.name, url: item.url, headers: item.headers, logo: item.logo, group: item.group
+            title: String(item.name || ''), url: String(item.url || ''),
+            headers: plainHeaders, logo: String(item.logo || ''), group: String(item.group || '')
           });
           if (res && res.error === 'stream') toast(t('download_stream_error'), 'err');
           else if (res && res.record) {
@@ -1657,9 +1672,14 @@ function showDetail(item, playlist) {
           } else toast(t('download_failed'), 'err');
         } catch (e) {
           toast(t('download_failed') + ': ' + String(e && e.message || e).slice(0, 140), 'err');
+        } finally {
+          dlBtn.textContent = original;
+          dlBtn.disabled = false;
+          dlBtn.classList.remove('busy');
         }
       }
-    }));
+    });
+    actions.appendChild(dlBtn);
   }
 
   if (/^https?:/i.test(item.url)) {

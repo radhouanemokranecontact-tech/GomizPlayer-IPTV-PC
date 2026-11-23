@@ -1647,7 +1647,9 @@ function registerIpc() {
     assertTrustedSender(event);
     try {
       if (item && item.url) await assertSafeUrl(item.url, { allowRecordingProtocols: true });
-      return { record: downloads.add(item) };
+      const rec = await downloads.add(item);
+      // Return a plain cloneable summary (rec may contain non-cloneable values)
+      return { record: { id: rec && rec.id, state: rec && rec.state, title: rec && rec.title, url: rec && rec.url } };
     } catch (e) {
       return { error: e.message || 'download failed' };
     }
