@@ -1,6 +1,6 @@
 {
   "name": "gomizplayer-iptv",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "GomizPlayer IPTV — neutral IPTV/VOD player (Electron).",
   "main": "src/main/main.js",
   "author": "",

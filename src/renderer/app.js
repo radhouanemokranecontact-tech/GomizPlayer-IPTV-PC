@@ -968,7 +968,7 @@ function homeWidget() {
   clockRow.appendChild(analogGlyph);
   clockRow.appendChild(clockValue);
   clock.appendChild(clockRow);
-  const clockSub = el('div', 'wc-sub', new Date().toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }));
+  const clockSub = el('div', 'wc-sub', new Date().toLocaleDateString(appLocale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }));
   clockSub.id = 'homeClockDate';
   clock.appendChild(clockSub);
   if (s.widgetClock === false) clock.classList.add('hidden-ui');
@@ -1705,12 +1705,17 @@ function showDetail(item, playlist) {
 
 /* ===================== Sources ===================== */
 
+/** Locale tied to the app language (not the OS locale) — avoids French dates in EN mode. */
+function appLocale() {
+  return (state.settings && state.settings.language === 'ar') ? 'ar' : 'en-US';
+}
+
 function formatAccountExpiry(info) {
   if (!info || !info.available) return info && info.error ? 'Unavailable' : '—';
   if (!info.expDate) return 'Unlimited';
   const d = new Date(Number(info.expDate) * 1000);
   if (!Number.isFinite(d.getTime())) return '—';
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(appLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function sourceSubText(source) {
@@ -3734,7 +3739,7 @@ function startClock() {
     setHand('clkSec', now.getSeconds() * 6);
     updateWidgetBackgrounds();
     const dateEl = document.getElementById('homeClockDate');
-    if (dateEl) dateEl.textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString(appLocale(), { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
     updatePrayerCountdown();
   };
   tick();
