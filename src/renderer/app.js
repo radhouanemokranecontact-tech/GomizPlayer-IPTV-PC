@@ -2356,11 +2356,38 @@ function settingsGeneral(panel) {
     render();
   }));
 
-  panel.appendChild(segRow(t('theme'), [['dark', t('theme_dark')], ['light', t('theme_light')]], state.settings.theme || 'dark', async (value) => {
-    await patchSettings({ theme: value });
-    document.documentElement.dataset.theme = value;
-    render();
-  }));
+  // Themes: instant live preview (click = apply + save)
+  const THEMES = [
+    ['dark', 'Dark', '#080a0f'],
+    ['light', 'Light', '#f4f6fb'],
+    ['tivimate', 'TiviMate', '#05070b'],
+    ['cinematic', 'Cinematic', '#000000'],
+    ['cobalt', 'Plex Cobalt', '#0d1520'],
+    ['frosted', 'Frosted', '#8aa4c8']
+  ];
+  const themeRow = el('div', 'switch-row');
+  const themeMain = el('div', 'list-main');
+  themeMain.appendChild(el('div', 'list-title', t('theme') || 'Theme'));
+  themeMain.appendChild(el('div', 'list-sub', 'Live preview — picks instantly / معاينة مباشرة'));
+  themeRow.appendChild(themeMain);
+  const themeSw = el('div', 'swatches');
+  THEMES.forEach(([id, label, color]) => {
+    const b = el('button', 'swatch theme-swatch' + ((state.settings.theme || 'dark') === id ? ' on' : ''));
+    b.style.background = color;
+    b.title = label;
+    b.addEventListener('click', async () => {
+      // instant preview first
+      document.documentElement.dataset.theme = id;
+      themeSw.querySelectorAll('.theme-swatch').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      // then persist
+      try { await patchSettings({ theme: id }); } catch (_) {}
+      toast(label, 'ok');
+    });
+    themeSw.appendChild(b);
+  });
+  themeRow.appendChild(themeSw);
+  panel.appendChild(themeRow);
 
   panel.appendChild(el('h3', null, t('accent')));
   panel.appendChild(el('p', 'hint', t('accent_hint')));
