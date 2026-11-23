@@ -3239,7 +3239,7 @@ function settingsAbout(panel) {
   const contactRows = [
     [t('contact_facebook') || 'Facebook', 'https://www.facebook.com/profile.php?id=61595630273747', null, 'facebook'],
     [t('contact_email') || 'Email', 'mailto:radhouanemokrane.contact@gmail.com', 'radhouanemokrane.contact@gmail.com', 'mail'],
-    [t('contact_github') || 'GitHub', 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV', null, 'github']
+    [t('contact_github') || 'GitHub', 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC-PC', null, 'github']
   ];
   contactRows.forEach(([label, url, text, icon]) => {
     const row = el('div', 'list-row');
@@ -3912,8 +3912,10 @@ function bindGlobal() {
     });
   });
   document.getElementById('backBtn').addEventListener('click', goBack);
-  document.getElementById('quickAddBtn').addEventListener('click', () => openSourceModal());
-  document.getElementById('guideBtn').addEventListener('click', openGuide);
+  const qab = document.getElementById('quickAddBtn');
+  if (qab) qab.addEventListener('click', () => openSourceModal());
+  const gb = document.getElementById('guideBtn');
+  if (gb) gb.addEventListener('click', openGuide);
   document.getElementById('langBtn').addEventListener('click', async () => {
     const order = ['en', 'ar'];
     const cur = order.includes(state.settings.language) ? state.settings.language : 'en';
@@ -3927,7 +3929,7 @@ function bindGlobal() {
   const socialLinks = {
     facebook: 'https://www.facebook.com/profile.php?id=61595630273747',
     mail: 'mailto:' + contactEmail,
-    github: 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV'
+    github: 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC-PC'
   };
   window.__novaOpenEmailComposer = () => openEmailComposer(contactEmail);
   const sidebarSocial = document.getElementById('sidebarSocial');
