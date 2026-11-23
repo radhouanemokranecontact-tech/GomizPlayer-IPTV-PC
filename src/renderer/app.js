@@ -2263,7 +2263,6 @@ function renderSettings() {
     ['home', t('home_tab')],
     ['player', t('player')],
     ['subtitles', t('subtitles')],
-    ['epg', t('guide')],
     ['storage', t('storage')],
     ['system', t('system')],
     ['about', t('about')]
@@ -2279,7 +2278,6 @@ function renderSettings() {
   else if (state.settingsTab === 'home') settingsHome(panel);
   else if (state.settingsTab === 'player') settingsPlayer(panel);
   else if (state.settingsTab === 'subtitles') settingsSubtitles(panel);
-  else if (state.settingsTab === 'epg') { void settingsEpg(panel); }
   else if (state.settingsTab === 'storage') settingsStorage(panel);
   else if (state.settingsTab === 'system') settingsSystem(panel);
   else settingsAbout(panel);
@@ -3239,7 +3237,7 @@ function settingsAbout(panel) {
   const contactRows = [
     [t('contact_facebook') || 'Facebook', 'https://www.facebook.com/profile.php?id=61595630273747', null, 'facebook'],
     [t('contact_email') || 'Email', 'mailto:radhouanemokrane.contact@gmail.com', 'radhouanemokrane.contact@gmail.com', 'mail'],
-    [t('contact_github') || 'GitHub', 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV', null, 'github']
+    [t('contact_github') || 'GitHub', 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC', null, 'github']
   ];
   contactRows.forEach(([label, url, text, icon]) => {
     const row = el('div', 'list-row');
@@ -3912,8 +3910,10 @@ function bindGlobal() {
     });
   });
   document.getElementById('backBtn').addEventListener('click', goBack);
-  document.getElementById('quickAddBtn').addEventListener('click', () => openSourceModal());
-  document.getElementById('guideBtn').addEventListener('click', openGuide);
+  const _qab = document.getElementById('quickAddBtn');
+  if (_qab) _qab.addEventListener('click', () => openSourceModal());
+  const _gb = document.getElementById('guideBtn');
+  if (_gb) _gb.addEventListener('click', openGuide);
   document.getElementById('langBtn').addEventListener('click', async () => {
     const order = ['en', 'ar'];
     const cur = order.includes(state.settings.language) ? state.settings.language : 'en';
@@ -3921,13 +3921,14 @@ function bindGlobal() {
     await setLanguage(next);
     render();
   });
-  document.getElementById('profileBtn').addEventListener('click', () => navigate('settings', { tab: 'storage' }));
+  const _pbtn = document.getElementById('profileBtn');
+  if (_pbtn) _pbtn.addEventListener('click', () => navigate('settings', { tab: 'storage' }));
 
   const contactEmail = 'radhouanemokrane.contact@gmail.com';
   const socialLinks = {
     facebook: 'https://www.facebook.com/profile.php?id=61595630273747',
     mail: 'mailto:' + contactEmail,
-    github: 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV'
+    github: 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC'
   };
   window.__novaOpenEmailComposer = () => openEmailComposer(contactEmail);
   const sidebarSocial = document.getElementById('sidebarSocial');
