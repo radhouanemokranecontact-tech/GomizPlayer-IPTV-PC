@@ -754,6 +754,11 @@ function navigate(route, opts = {}) {
     openLiveReceiver('favorites');
     return;
   }
+  // TV Guide is a modal, not a standalone page — open it directly.
+  if (route === 'guide') {
+    openGuide();
+    return;
+  }
   if (state.route === route) {
     if (opts.force) render();
     return;
