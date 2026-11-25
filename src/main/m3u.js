@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const classification = require('../shared/classification');
+const { parseCatchupAttrs } = require('./pro/catchup');
 
 const SKIP_HINT = /(adult|xxx|18\+|لكبار|اباحي|إباحي)/i;
 
@@ -94,6 +95,7 @@ function parseM3U(text, opts = {}) {
       tvgName,
       url,
       kind,
+      catchup: (pending && pending.catchup) || undefined,
       headers: { ...pendingHeaders },
       hidden: SKIP_HINT.test(group) || SKIP_HINT.test(name)
     });
@@ -121,7 +123,8 @@ function parseM3U(text, opts = {}) {
         group: attrs['group-title'] || '',
         logo: attrs['tvg-logo'] || '',
         tvgId: attrs['tvg-id'] || '',
-        tvgName: attrs['tvg-name'] || ''
+        tvgName: attrs['tvg-name'] || '',
+        catchup: parseCatchupAttrs(attrs)
       };
       if (pending.group) pendingGroup = '';
       continue;

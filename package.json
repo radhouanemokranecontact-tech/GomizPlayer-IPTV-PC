@@ -1,9 +1,9 @@
 {
-  "name": "gomizplayer-iptv",
-  "version": "1.0.35",
-  "description": "GomizPlayer IPTV — neutral IPTV/VOD player (Electron).",
+  "name": "gomizplayer-pro-iptv",
+  "version": "1.0.36",
+  "description": "GomizPlayer PRO IPTV — IPTV/VOD player with channel health scan, auto-failover, catch-up, scheduled recording and parental controls (Electron).",
   "main": "src/main/main.js",
-  "author": "",
+  "author": "GomizPlayer",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -21,12 +21,19 @@
     "sign:manifest": "node scripts/sign-update-manifest.js RELEASE_MANIFEST.yml",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
-    "postdist": "node scripts/organize-dist.js"
+    "postdist": "node scripts/organize-dist.js",
+    "test:net-guard": "node tools/test-net-guard.js",
+    "test:hardening": "node tools/test-hardening.js",
+    "test:pro": "node tools/test-pro.js",
+    "test:pro-ipc": "node tools/test-pro-ipc.js",
+    "test:media": "node tools/test-media-integration.js",
+    "smoke": "electron . --smoke-test"
   },
   "dependencies": {
     "electron-updater": "6.8.11",
     "ffmpeg-static": "^5.3.0",
     "hls.js": "^1.5.20",
+    "js-yaml": "^4.1.0",
     "mpegts.js": "^1.7.3"
   },
   "devDependencies": {
@@ -35,7 +42,7 @@
   },
   "build": {
     "appId": "com.gomizplayer.iptv",
-    "productName": "GomizPlayer IPTV",
+    "productName": "GomizPlayer PRO IPTV",
     "directories": {
       "output": "dist"
     },
@@ -75,8 +82,12 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "GomizPlayer IPTV",
-      "differentialPackage": true
+      "shortcutName": "GomizPlayer PRO IPTV",
+      "differentialPackage": true,
+      "artifactName": "GomizPlayer-PRO-IPTV-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "GomizPlayer-PRO-IPTV-Portable-${version}.${ext}"
     }
   },
   "allowScripts": {

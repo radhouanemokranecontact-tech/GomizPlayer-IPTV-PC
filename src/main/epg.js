@@ -2,14 +2,19 @@
 
 // Minimal XMLTV / EPG parser (tolerant, no external deps).
 
+function safeCp(n) {
+  // String.fromCodePoint throws RangeError on >0x10FFFF, which would abort the whole EPG parse.
+  return Number.isInteger(n) && n >= 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : '\uFFFD';
+}
+
 function decodeEntities(s) {
   return String(s)
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);/g, (_, n) => safeCp(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => safeCp(parseInt(n, 16)))
     .replace(/&amp;/g, '&');
 }
 

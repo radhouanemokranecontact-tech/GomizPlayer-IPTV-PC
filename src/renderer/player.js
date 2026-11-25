@@ -677,6 +677,7 @@ class Player {
   }
 
   load(item) {
+    if (!this._foLoading) this._fo = null;
     this.loadToken = (this.loadToken || 0) + 1;
     const token = this.loadToken;
     this.teardown();
@@ -2282,7 +2283,7 @@ class Player {
       html += '<hr><h4>' + window.t('quality') + '</h4><div class="stats-grid">';
       this.hls.levels.forEach((lv, i) => {
         const on = this.hls.currentLevel === i;
-        html += '<span style="color:' + (on ? 'var(--accent)' : 'inherit') + '">' + lv.width + '×' + lv.height + (on ? ' ✓' : '') + '</span><b>' + fmtBitrate(lv.bitrate) + '</b>';
+        html += '<span style="color:' + (on ? 'var(--accent)' : 'inherit') + '">' + Number(lv.width) + '×' + Number(lv.height) + (on ? ' ✓' : '') + '</span><b>' + fmtBitrate(lv.bitrate) + '</b>';
       });
       html += '</div>';
     }
@@ -2299,7 +2300,36 @@ class Player {
     if (on && this.loadingLabel) this.loadingLabel.textContent = window.t('loading_stream');
   }
 
-  showError(message) {
+  /** PRO: on a fatal stream error of a live channel, silently try another source of the same channel (max 3 hops). */
+  tryFailover(message) {
+    try {
+      const o = this.opts || {};
+      if (!this.item || !this.isLive || !o.getAlternatives || (o.autoFailover && !o.autoFailover())) return false;
+      if (!this._fo) this._fo = { tried: new Set(), n: 0 };
+      const st = this._fo;
+      if (st.n >= 3) { this._fo = null; return false; }
+      const failed = this.item; const token = this.loadToken;
+      st.tried.add(failed.key); st.n++;
+      this.loadingLabel.textContent = window.GomizPro ? window.GomizPro.tr('failover') : 'Switching to a backup source…';
+      this.setLoading(true);
+      Promise.resolve(o.getAlternatives(failed)).then((alts) => {
+        if (this.loadToken !== token || !this.open) return;
+        const next = (alts || []).find((a) => a && a.url && !st.tried.has(a.key));
+        if (!next) { this._fo = null; this.showError(message, true); return; }
+        const merged = Object.assign({}, failed, next);
+        this.item = merged; this.errorCount = 0; this.errorBox.hidden = true;
+        this.titleEl.textContent = merged.name || '';
+        try { this.updateAvatar(merged); this.updateMeta(); } catch (_) {}
+        this._foLoading = true;
+        try { this.load(merged); } finally { this._foLoading = false; }
+        if (o.toast) o.toast((window.GomizPro ? window.GomizPro.tr('failover_ok') : 'Switched to backup source') + ': ' + (next.name || ''), 'ok');
+      }).catch(() => { if (this.loadToken === token) this.showError(message, true); });
+      return true;
+    } catch (_) { return false; }
+  }
+
+  showError(message, noFailover) {
+    if (!noFailover && this.tryFailover(message)) return;
     this.setLoading(false);
     this.errorBox.hidden = false;
     this.center.hidden = true;

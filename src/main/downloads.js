@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
-const { Readable } = require('stream');
 const { pipeline } = require('stream/promises');
+const { safeGet, isPrivateOrLocalHostname } = require('./net-guard');
 let ffmpegPath = null;
 try { ffmpegPath = require('ffmpeg-static'); } catch (_) { ffmpegPath = null; }
 // Resolve to the unpacked location when running inside an asar archive
@@ -235,17 +235,24 @@ class Downloads {
     if (existing > 0) headers.Range = `bytes=${existing}-`;
 
     try {
-      const res = await fetch(rec.url, { headers, signal: abort.signal, redirect: 'follow' });
-      if (!res.ok && res.status !== 206) throw new Error('HTTP ' + res.status);
+      // Public origins: every redirect hop and the connected address must stay public (anti-SSRF).
+      // User-chosen LAN/localhost origins are left unrestricted (home IPTV boxes, NAS, etc.).
+      let originHost = '';
+      try { originHost = new URL(rec.url).hostname; } catch (_) {}
+      const guard = isPrivateOrLocalHostname(originHost) ? 'none' : 'all';
+      const res = await safeGet(rec.url, { headers, signal: abort.signal, guard, timeoutMs: 60000 });
+      if (res.status !== 200 && res.status !== 206) { try { res.stream.destroy(); } catch (_) {} throw new Error('HTTP ' + res.status); }
 
       const isResume = res.status === 206 && existing > 0;
-      const len = Number(res.headers.get('content-length') || 0);
+      // content-length of a decoded (gzip) body is unreliable; only trust it for identity encoding
+      const enc = String(res.headers['content-encoding'] || '').toLowerCase();
+      const len = enc && enc !== 'identity' ? 0 : Number(res.headers['content-length'] || 0);
       rec.received = isResume ? existing : 0;
       rec.total = isResume ? rec.received + len : len;
 
       const out = fs.createWriteStream(part, { flags: isResume ? 'a' : 'w' });
       let lastSave = 0;
-      const body = Readable.fromWeb(res.body);
+      const body = res.stream;
       body.on('data', (chunk) => {
         rec.received += chunk.length;
         const now = Date.now();
@@ -304,13 +311,21 @@ class Downloads {
     const finalPath = path.join(targetDir, rec.id + '.mp4');
     const headers = rec.headers || {};
     const args = ['-y', '-nostdin', '-loglevel', 'info'];
+    const clean = (x) => String(x == null ? '' : x).replace(/[\r\n\0]+/g, ' ').trim();
     const saneHeaders = Object.entries(headers)
-      .map(([k, v]) => [String(k || '').trim(), String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim()])
+      .map(([k, v]) => [clean(k).replace(/[:\s]+/g, '-'), clean(v)])
       .filter(([k, v]) => k && v);
     if (saneHeaders.length) {
       const hstr = saneHeaders.map(([k, v]) => k + ': ' + v).join('\r\n') + '\r\n';
       args.push('-headers', hstr);
     }
+    // Restrict ffmpeg to network protocols only: a remote playlist must never pull file:, concat:, subfile:, etc.
+    const scheme = (() => { try { return new URL(rec.url).protocol.replace(':', ''); } catch (_) { return 'http'; } })();
+    const wl = /^rtmps?$/.test(scheme) ? 'rtmp,rtmps,tcp,tls,crypto'
+      : /^rtsps?$/.test(scheme) ? 'rtsp,rtsps,rtp,tcp,tls,udp,crypto'
+      : scheme === 'udp' ? 'udp,rtp'
+      : 'http,https,tcp,tls,crypto';
+    args.push('-protocol_whitelist', wl, '-rw_timeout', '30000000');
     args.push('-i', rec.url, '-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+faststart', finalPath);
 
     rec.state = 'Downloading';

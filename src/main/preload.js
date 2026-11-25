@@ -143,6 +143,32 @@ contextBridge.exposeInMainWorld('api', {
     saveScreenshot: (dataUrl, name) => invoke('capture:saveScreenshot', { dataUrl, name })
   },
 
+  pro: {
+    status: () => invoke('pro:status'),
+    health: {
+      scan: (opts) => invoke('pro:health:scan', opts),
+      cancel: () => invoke('pro:health:cancel'),
+      summary: (sourceId) => invoke('pro:health:summary', { sourceId }),
+      setHideDead: (on) => invoke('pro:health:setHideDead', { on }),
+      clear: () => invoke('pro:health:clear'),
+      onProgress: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on('pro:health:progress', h); return () => ipcRenderer.removeListener('pro:health:progress', h); },
+      onDone: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on('pro:health:done', h); return () => ipcRenderer.removeListener('pro:health:done', h); }
+    },
+    dupes: () => invoke('pro:dupes:summary'),
+    alternatives: (item) => invoke('pro:alternatives', { key: item && item.key, url: item && item.url }),
+    catchupUrl: (item, start, end) => invoke('pro:catchup:url', { item: item && { url: item.url, headers: item.headers, catchup: item.catchup }, start, end }),
+    sched: {
+      list: () => invoke('pro:sched:list'),
+      add: (entry) => invoke('pro:sched:add', entry),
+      remove: (id) => invoke('pro:sched:remove', { id })
+    },
+    parental: {
+      get: () => invoke('pro:parental:get'),
+      set: (cfg) => invoke('pro:parental:set', cfg)
+    },
+    exportM3U: (opts) => invoke('pro:export:m3u', opts)
+  },
+
   recording: {
     start: (url, headers, name, key) => invoke('recording:start', { url, headers, name, key }),
     stop: () => invoke('recording:stop'),

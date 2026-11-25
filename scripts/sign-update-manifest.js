@@ -14,31 +14,13 @@ const path = require('path');
 const crypto = require('crypto');
 const yaml = require('js-yaml');
 
-const [file, keyFile] = process.argv.slice(2);
+const [file, keyFile, validDays] = process.argv.slice(2);
 if (!file || !keyFile) {
-  console.error('usage: node scripts/sign-update-manifest.js <latest.yml> <private-key.pem>');
+  console.error('usage: node scripts/sign-update-manifest.js <manifest.yml> <private-key.pem> [validDays]');
   process.exit(1);
 }
 
-function canonicalString(v) { return JSON.stringify(String(v)); }
-
-function canonicalize(info) {
-  const parts = [];
-  parts.push('version=' + canonicalString(info.version));
-  if (info.stagingPercentage !== undefined) parts.push('stagingPercentage=' + JSON.stringify(Number(info.stagingPercentage)));
-  if (info.minimumSystemVersion !== undefined) parts.push('minimumSystemVersion=' + canonicalString(info.minimumSystemVersion));
-  const files = Array.isArray(info.files) ? info.files : [];
-  parts.push('files=' + files.length);
-  for (const f of files) {
-    const e = [];
-    e.push('url=' + canonicalString(f.url));
-    e.push('sha512=' + canonicalString(f.sha512));
-    e.push('size=' + JSON.stringify(Number(f.size)));
-    if (f.blockMapUrl !== undefined) e.push('blockMapUrl=' + canonicalString(f.blockMapUrl));
-    parts.push('file{' + e.join(',') + '}');
-  }
-  return parts.join('\n');
-}
+const { canonicalize } = require('../src/main/manifest-verify');
 
 function verifySignedPayload(info, signature, publicKey) {
   return crypto.verify(null, Buffer.from(canonicalize(info), 'utf8'), publicKey, Buffer.from(signature, 'base64'));
@@ -53,6 +35,7 @@ if (!info || !info.version || !Array.isArray(info.files) || info.files.length ==
 const privateKey = crypto.createPrivateKey(fs.readFileSync(keyFile));
 delete info.signature;
 delete info.signatures;
+if (validDays) info.validUntil = new Date(Date.now() + Number(validDays) * 86400000).toISOString();
 const payload = Buffer.from(canonicalize(info), 'utf8');
 const signature = crypto.sign(null, payload, privateKey).toString('base64');
 

@@ -27,90 +27,7 @@ function isPathInsideDir(targetPath, dirPath) {
   } catch (_) { return false; }
 }
 
-function isPrivateIPv4(parts) {
-  if (!Array.isArray(parts) || parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return true;
-  const [a,b] = parts;
-  if (a === 0) return true; // 0.0.0.0/8
-  if (a === 10) return true; // 10.0.0.0/8
-  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10
-  if (a === 127) return true; // 127.0.0.0/8
-  if (a === 169 && b === 254) return true; // 169.254.0.0/16
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-  if (a === 192 && b === 168) return true; // 192.168.0.0/16
-  return false;
-}
-
-function extractIPv4FromMappedIPv6(h) {
-  // dotted form: ::ffff:127.0.0.1
-  let m = h.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
-  if (m) return m[1].split('.').map((n) => Number(n));
-  // hex form: ::ffff:7f00:1
-  m = h.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
-  if (m) {
-    const hi = parseInt(m[1], 16), lo = parseInt(m[2], 16);
-    return [(hi >> 8) & 255, hi & 255, (lo >> 8) & 255, lo & 255];
-  }
-  return null;
-}
-
-function isPrivateOrLocalHostname(hostname) {
-  let h = String(hostname || '').toLowerCase().trim();
-  if (h.endsWith('.')) h = h.slice(0, -1); // strip trailing dot
-  h = h.replace(/^\[|\]$/g, '');
-  if (!h) return true;
-  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local')) return true;
-
-  const ipType = net.isIP(h);
-  if (ipType === 4) {
-    const parts = h.split('.').map((n) => Number(n));
-    return isPrivateIPv4(parts);
-  }
-  if (ipType === 6) {
-    if (h === '::' || h === '::1' || h === '0:0:0:0:0:0:0:0' || h === '0:0:0:0:0:0:0:1') return true;
-    const mapped = extractIPv4FromMappedIPv6(h);
-    if (mapped) return isPrivateIPv4(mapped);
-    // fc00::/7 (fc00..fdff)
-    const first = (h.split(':')[0] || '0');
-    const f = parseInt(first || '0', 16);
-    if ((f & 0xfe00) === 0xfc00) return true; // works for fc00/fd00 first hextet forms like fc00, fd12
-    if (/^(fc|fd)[0-9a-f]{2}/i.test(h.replace(/:/g,'').padEnd(4,'0'))) return true;
-    // fe80::/10
-    if (/^fe[89ab][0-9a-f]/i.test(h.replace(/:/g,'').padEnd(4,'0')) || /^fe80:/i.test(h)) return true;
-    // generic checks by prefix string for common forms
-    if (/^f[cd]/i.test(h)) return true; // fc00::/7
-    if (/^fe[89ab]/i.test(h)) return true; // fe80::/10
-    return false;
-  }
-  // Not a literal IP (domain) - treat localhost-like names as local
-  return false;
-}
-
-async function assertSafeUrl(rawUrl, opts = {}) {
-  const u = new URL(String(rawUrl || ''));
-  const proto = String(u.protocol || '').toLowerCase();
-  const allowRecording = !!opts.allowRecordingProtocols;
-  const allowed = allowRecording ? ['http:', 'https:', 'rtmp:', 'rtmps:', 'rtsp:', 'rtsps:', 'udp:'] : ['http:', 'https:'];
-  if (!allowed.includes(proto)) throw new Error('URL protocol not allowed');
-  if (opts.blockLocalPrivate) {
-    // normalize trailing dot in hostname for checks
-    let host = String(u.hostname || '').toLowerCase();
-    if (host.endsWith('.')) host = host.slice(0, -1);
-    if (host === 'metadata.google.internal' || host === 'metadata' || host.startsWith('metadata.')) {
-      throw new Error('Local/private URL not allowed');
-    }
-    if (isPrivateOrLocalHostname(host)) throw new Error('Local/private URL not allowed');
-    // DNS rebinding / resolved address check
-    if (net.isIP(host) === 0) {
-      const addrs = await dns.lookup(host, { all: true, verbatim: true });
-      if (!Array.isArray(addrs) || addrs.length === 0) throw new Error('Local/private URL not allowed');
-      for (const a of addrs) {
-        const addr = a && a.address ? String(a.address) : '';
-        if (!addr || isPrivateOrLocalHostname(addr)) throw new Error('Local/private URL not allowed');
-      }
-    }
-  }
-  return u;
-}
+const { assertSafeUrl, isPrivateOrLocalHostname, safeGet, readLimited } = require('./net-guard');
 
 function safeName(value) {
   let s = String(value || 'recording');
@@ -127,6 +44,10 @@ const { parseM3U, xtreamUrl, xtreamAccountUrl, looksLikePlaylist, isHlsPlaylist,
 const classification = require('../shared/classification');
 const { parseEpg } = require('./epg');
 const { Downloads } = require('./downloads');
+const proIpc = require('./pro/ipc');
+const { applyFlags: applyProFlags } = require('./pro/flags');
+let proApi = null;
+app.on('before-quit', () => { try { if (proApi && proApi.shutdown) proApi.shutdown(); } catch (_) {} });
 
 const MAX_PLAYLIST_BYTES = 30 * 1024 * 1024;
 const MAX_EPG_BYTES = 60 * 1024 * 1024;
@@ -260,6 +181,7 @@ let win = null;
 let updateGuard = null;
 let updateState = { status: 'idle', version: '', progress: 0, message: '' };
 let updatePromptShown = false;
+let lastUpdateInfo = null;
 
 function sendUpdateStatus(patch) {
   const prev = updateState.status;
@@ -282,9 +204,11 @@ function setupAutoUpdates() {
     // Updates are only fetched when the user explicitly requests them.
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = false;
+    autoUpdater.allowDowngrade = false;
+    autoUpdater.allowPrerelease = false;
     autoUpdater.on('checking-for-update', () => sendUpdateStatus({ status: 'checking', message: '' }));
-    autoUpdater.on('update-available', (info) => sendUpdateStatus({ status: 'available', version: info && info.version || '', message: '' }));
-    autoUpdater.on('update-not-available', () => sendUpdateStatus({ status: 'none', message: '' }));
+    autoUpdater.on('update-available', (info) => { lastUpdateInfo = info || null; sendUpdateStatus({ status: 'available', version: info && info.version || '', message: '' }); });
+    autoUpdater.on('update-not-available', () => { lastUpdateInfo = null; sendUpdateStatus({ status: 'none', message: '' }); });
     autoUpdater.on('error', (err) => sendUpdateStatus({ status: 'error', message: String(err && err.message || err || 'update error') }));
     autoUpdater.on('download-progress', (p) => sendUpdateStatus({ status: 'downloading', progress: Math.round(Number(p && p.percent || 0)) }));
     autoUpdater.on('update-downloaded', (info) => sendUpdateStatus({ status: 'downloaded', version: info && info.version || '', progress: 100 }));
@@ -348,6 +272,12 @@ async function applyProxySettings() {
   }
 }
 
+// PRO rebrand changed productName; keep reading/writing the ORIGINAL data folder so users keep sources,
+// favourites and settings after upgrading. (Skipped if the caller passes --user-data-dir.)
+try {
+  if (!app.commandLine.hasSwitch('user-data-dir')) app.setPath('userData', path.join(app.getPath('appData'), 'GomizPlayer IPTV'));
+} catch (_) {}
+
 // VLC-like UA helps with many IPTV providers that whitelist known players.
 app.userAgentFallback = DEFAULT_UA;
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
@@ -357,7 +287,12 @@ function cacheDir() {
 }
 
 function cachePath(name) {
-  return path.join(cacheDir(), name + '.json');
+  // Ids can originate from imported backups: never let them contain path separators or '..'.
+  const safe = String(name).replace(/[^A-Za-z0-9._-]/g, '_').replace(/\.{2,}/g, '_').slice(0, 120);
+  const dir = path.resolve(cacheDir());
+  const full = path.resolve(dir, safe + '.json');
+  if (!isPathInsideDir(full, dir)) throw new Error('Invalid cache name');
+  return full;
 }
 
 function readCache(name) {
@@ -573,31 +508,13 @@ async function fetchText(url, headers, limit, timeoutMs = 45000, opts = {}) {
   try {
     const reqHeaders = { 'User-Agent': networkUA(), Accept: '*/*', ...(headers || {}) };
     const block = !!(opts && opts.blockLocalPrivate);
-    let current = String(url || '');
-    if (block) {
-      // manual redirects with validation
-      for (let i = 0; i < 5; i++) {
-        await assertSafeUrl(current, { blockLocalPrivate: true });
-        const res = await fetch(current, { headers: reqHeaders, signal: ctl.signal, redirect: 'manual' });
-        if ([301,302,303,307,308].includes(res.status)) {
-          const loc = res.headers.get('location');
-          if (!loc) throw new Error('Redirect without location');
-          current = new URL(loc, current).toString();
-          continue;
-        }
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const buf = Buffer.from(await res.arrayBuffer());
-        if (buf.length > limit) throw new Error('Response too large (' + Math.round(buf.length / 1048576) + ' MB)');
-        return { text: buf.toString('utf8'), finalUrl: res.url || current, bytes: buf.length };
-      }
-      throw new Error('Too many redirects');
-    } else {
-      const res = await fetch(current, { headers: reqHeaders, signal: ctl.signal, redirect: 'follow' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length > limit) throw new Error('Response too large (' + Math.round(buf.length / 1048576) + ' MB)');
-      return { text: buf.toString('utf8'), finalUrl: res.url || current, bytes: buf.length };
-    }
+    await assertSafeUrl(String(url || ''), { blockLocalPrivate: block });
+    // Always go through safeGet: manual redirects + decompression size cap.
+    // guard:'all' validates the *connected* address on every hop (no DNS-rebinding window).
+    const res = await safeGet(String(url || ''), { headers: reqHeaders, signal: ctl.signal, timeoutMs, guard: block ? 'all' : 'none' });
+    if (res.status < 200 || res.status >= 300) { try { res.stream.destroy(); } catch (_) {} throw new Error('HTTP ' + res.status); }
+    const buf = await readLimited(res.stream, limit);
+    return { text: buf.toString('utf8'), finalUrl: res.finalUrl, bytes: buf.length };
   } finally {
     clearTimeout(timer);
   }
@@ -614,7 +531,10 @@ async function readSourceText(source) {
 
   if (isLocalAddress(address)) {
     const file = localPath(address);
+    // A source path typed by the user must not become a generic "read any file" primitive.
+    if (!/\.(m3u8?|txt|m3u_plus)$/i.test(file)) throw new Error('Local playlists must be .m3u, .m3u8 or .txt files');
     const stat = await fsp.stat(file);
+    if (!stat.isFile()) throw new Error('Not a file');
     if (stat.size > MAX_PLAYLIST_BYTES) throw new Error('Playlist file is too large');
     return {
       text: await fsp.readFile(file, 'utf8'),
@@ -655,6 +575,9 @@ async function loadSource(source) {
     throw new Error('Not a valid M3U playlist');
   }
 
+  // PRO: parental controls + dead-channel hiding (never un-hides provider/adult-hint items)
+  if (proApi) items = applyProFlags(items, proApi.flagCtx());
+
   const groups = {};
   for (const item of items) {
     if (item.hidden) continue;
@@ -680,7 +603,7 @@ function createWindow() {
     minHeight: 640,
     show: !SMOKE,
     backgroundColor: '#0a0c11',
-    title: 'GomizPlayer IPTV',
+    title: 'GomizPlayer PRO IPTV',
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -968,7 +891,6 @@ function createWindow() {
                 }
               }
               log.push('nav-clicks:' + (navFails.length ? 'FAIL(' + navFails.join(',') + ')' : 'ok'));
-              }
 
               // Home layout editor: reorder, card size, items per row, hide a section.
               window.__novaTest.navigate('home');
@@ -1152,6 +1074,40 @@ function createWindow() {
                 if (dlRec) await window.api.downloads.remove(dlRec.id);
               }
 
+              // ---- PRO features through the REAL IPC layer ----
+              try {
+                window.__novaTest.navigate('pro');
+                await sleep(300);
+                log.push('pro-page:' + (document.getElementById('view').querySelectorAll('*').length > 30 ? 'ok' : 'FAIL'));
+                const st = await window.api.pro.status();
+                log.push('pro-status:' + (st && st.features && st.features.length >= 6 ? 'ok' : 'FAIL'));
+                const dup = await window.api.pro.dupes();
+                log.push('pro-dupes:' + (dup && typeof dup.live === 'number' ? 'ok' : 'FAIL'));
+                const par = await window.api.pro.parental.get();
+                log.push('pro-parental-get:' + (par && par.config && par.config.useDefaults === true ? 'ok' : 'FAIL'));
+                const past = await window.api.pro.sched.add({ name: 'x', url: 'http://example.com/a.ts', startAt: Date.now() - 7200000, endAt: Date.now() - 3600000 });
+                log.push('pro-sched-reject-past:' + (past && past.ok === false ? 'ok' : 'FAIL'));
+                const bad = await window.api.pro.sched.add({ name: 'x', url: 'file:///etc/passwd', startAt: Date.now() + 60000, endAt: Date.now() + 120000 });
+                log.push('pro-sched-reject-file-url:' + (bad && bad.ok === false ? 'ok' : 'FAIL'));
+                const okAdd = await window.api.pro.sched.add({ name: 'smoke', url: 'http://example.com/a.ts', startAt: Date.now() + 3600000, endAt: Date.now() + 7200000 });
+                const lst = await window.api.pro.sched.list();
+                log.push('pro-sched-add-list:' + (okAdd && okAdd.ok && lst.items.some((e) => e.id === okAdd.entry.id) ? 'ok' : 'FAIL'));
+                const rm = await window.api.pro.sched.remove(okAdd.entry.id);
+                log.push('pro-sched-remove:' + (rm && rm.ok ? 'ok' : 'FAIL'));
+                const cu = await window.api.pro.catchupUrl({ url: 'http://h.example.com/live/u/p/77.ts', catchup: { type: 'xc', days: 3 } }, Date.now() - 3600000, Date.now() - 1800000);
+                log.push('pro-catchup:' + (cu && cu.ok && cu.url.includes('/timeshift/u/p/30/') ? 'ok' : 'FAIL'));
+                const scanDone = new Promise((resolve) => { window.api.pro.health.onDone((x) => resolve(x)); setTimeout(() => resolve({ timeout: true }), 40000); });
+                const sc = await window.api.pro.health.scan({ sourceId: 'all', timeoutMs: 3000, concurrency: 4 });
+                const fin = sc && sc.started ? await scanDone : sc;
+                log.push('pro-health-scan:' + (fin && !fin.timeout && !fin.error && fin.total > 0 ? 'ok(' + fin.ok + '/' + fin.dead + ')' : 'FAIL(' + JSON.stringify(fin) + ')'));
+                const sum = await window.api.pro.health.summary('all');
+                log.push('pro-health-summary:' + (sum && (sum.ok + sum.dead) > 0 ? 'ok' : 'FAIL'));
+                await window.api.pro.health.clear();
+                const exp = await window.api.pro.parental.set({ enabled: true, keywords: ['zzzz'], lockedGroups: [] });
+                log.push('pro-parental-set:' + (exp && exp.ok ? 'ok' : 'FAIL'));
+                await window.api.pro.parental.set({ enabled: false, keywords: [], lockedGroups: [] });
+              } catch (e) { log.push('pro-EX:' + (e && e.message)); }
+
               window.__novaTest.state.library.search = await window.api.library.search('demo');
               window.__novaTest.state.searchTerm = 'big';
               window.__novaTest.navigate('search');
@@ -1166,7 +1122,8 @@ function createWindow() {
           detail = 'EXEC ' + err.message;
         }
       }
-      console.log('SMOKE_RESULT ' + (ready ? 'PASS' : 'FAIL') + ' ' + (lastError || ''));
+      const smokeBad = !!detail && /(^|\| )(EX:|pro-EX:|EXEC )|FAIL/.test(detail);
+      console.log('SMOKE_RESULT ' + (ready && !smokeBad ? 'PASS' : 'FAIL') + ' ' + (lastError || ''));
       if (detail) console.log('SMOKE_DETAIL ' + detail);
 
       if (ready && SCREENSHOTS) {
@@ -1269,6 +1226,15 @@ function createWindow() {
 }
 
 function registerIpc() {
+  proApi = proIpc.register({
+    ipcMain, dialog, getWin: () => win, assertTrustedSender, store,
+    readCache, writeCache, verifyAppLockPin, assertSafeUrl,
+    appVersion: () => app.getVersion(),
+    startRecording: (payload, opts) => startRecordingCore(payload, opts),
+    isRecording: (file) => !!recordingProc && !!file && recordingPath === file,
+    // stop only the recording that the scheduler itself started (never a manual one that replaced it)
+    stopRecording: async (file) => { if (!file || recordingPath === file) return stopRecordingInternal(); return { ok: false }; }
+  });
   ipcMain.handle('app:info', () => ({
     version: app.getVersion(),
     electron: process.versions.electron,
@@ -1316,14 +1282,26 @@ function registerIpc() {
     } catch (_) {}
     try { autoUpdater.quitAndInstall(false, true); return true; } catch (_) { return false; }
   });
-  // Verify the signed update manifest before downloading anything.
+  // Verify the signed manifest AND bind it to the exact update electron-updater will download.
   async function verifyUpdateManifest() {
     try {
-      const { verify } = require('./manifest-verify');
+      const { verify, matchesUpdateInfo } = require('./manifest-verify');
       const url = 'https://raw.githubusercontent.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/main/RELEASE_MANIFEST.yml';
-      const res = await fetch(url);
-      if (!res.ok) return { ok: false, reason: 'manifest-unreachable' };
-      return verify(await res.text());
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 20000);
+      let text;
+      try {
+        const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+        if (!res.ok) return { ok: false, reason: 'manifest-unreachable' };
+        text = await res.text();
+      } finally { clearTimeout(timer); }
+      if (text.length > 256 * 1024) return { ok: false, reason: 'manifest-too-large' };
+      const v = verify(text);
+      if (!v.ok) return v;
+      if (!lastUpdateInfo) {
+        try { await autoUpdater.checkForUpdates(); } catch (_) {}
+      }
+      return matchesUpdateInfo(v.info, lastUpdateInfo, app.getVersion());
     } catch (e) { return { ok: false, reason: String(e && e.message || e) }; }
   }
 
@@ -1359,6 +1337,28 @@ function registerIpc() {
     assertTrustedSender(event);
     const prev = store.settings || {};
     let p = Object.assign({}, patch || {});
+    // Derived/secret fields can only be set through their dedicated flows.
+    delete p.appLockHash; delete p.appLockSalt; delete p.telemetryInstallId;
+    delete p.proParental; delete p.proHideDead; // changed only via pro:* channels (PIN-protected / cache-aware)
+    if (typeof p.telemetryEndpoint === 'string' && p.telemetryEndpoint.trim()) {
+      try { const tu = new URL(p.telemetryEndpoint.trim()); if (!/^https?:$/.test(tu.protocol)) throw 0; p.telemetryEndpoint = tu.toString(); }
+      catch (_) { delete p.telemetryEndpoint; }
+    }
+    for (const dirKey of ['downloadsDir', 'recordingsDir']) {
+      if (typeof p[dirKey] === 'string' && p[dirKey].trim()) {
+        const d = p[dirKey].trim();
+        let ok = path.isAbsolute(d) && !/\0/.test(d);
+        if (ok) {
+          const rp = path.resolve(d);
+          const forbiddenRoots = [app.getAppPath(), path.dirname(app.getPath('exe')), process.env.SystemRoot, process.env.windir, process.env.ProgramFiles, process.env['ProgramFiles(x86)']]
+            .filter(Boolean).map((x) => path.resolve(x));
+          const exact = [path.parse(rp).root, app.getPath('home')].map((x) => path.resolve(x));
+          if (exact.includes(rp) || forbiddenRoots.some((x) => isPathInsideDir(rp, x))) ok = false;
+          else p[dirKey] = rp;
+        }
+        if (!ok) delete p[dirKey];
+      }
+    }
     if (Object.prototype.hasOwnProperty.call(p, 'appLockPin')) {
       const pin = String(p.appLockPin || '');
       delete p.appLockPin;
@@ -1655,11 +1655,11 @@ function registerIpc() {
     }
   });
   ipcMain.handle('downloads:pause', (event, id) => {
-    assertTrustedSender(event); assertTrustedSender(event); return downloads.pause(id); });
+    assertTrustedSender(event); return downloads.pause(id); });
   ipcMain.handle('downloads:resume', (event, id) => {
-    assertTrustedSender(event); assertTrustedSender(event); return downloads.resume(id); });
+    assertTrustedSender(event); return downloads.resume(id); });
   ipcMain.handle('downloads:remove', (event, id) => {
-    assertTrustedSender(event); assertTrustedSender(event); return downloads.remove(id); });
+    assertTrustedSender(event); return downloads.remove(id); });
   ipcMain.handle('downloads:open', (event, id) => {
     assertTrustedSender(event);
     try {
@@ -1688,7 +1688,7 @@ function registerIpc() {
   ipcMain.handle('app:exportBackup', async (event) => {
     assertTrustedSender(event);
     const res = await dialog.showSaveDialog(win, {
-      title: 'Export GomizPlayer IPTV backup',
+      title: 'Export GomizPlayer PRO backup',
       defaultPath: path.join(app.getPath('documents'), 'gomizplayer-backup.json'),
       filters: [{ name: 'JSON', extensions: ['json'] }]
     });
@@ -2093,8 +2093,7 @@ async function stopRecordingInternal() {
   return { ok: true, path: prevPath };
 }
 
-ipcMain.handle('recording:start', async (event, payload) => {
-    assertTrustedSender(event);
+async function startRecordingCore(payload, opts = {}) {
     const url = payload && payload.url;
     if (!url) return { error: 'no url' };
     try { await assertSafeUrl(url, { allowRecordingProtocols: true }); } catch (e) { return { error: e.message || 'invalid url' }; }
@@ -2104,6 +2103,7 @@ ipcMain.handle('recording:start', async (event, payload) => {
     const target = { url: String(url), name: String(name), headers, key: String(key || '') };
 
     if (recordingProc) {
+      if (opts.noReplace) return { error: 'busy' };
       await stopRecordingInternal();
     }
 
@@ -2123,13 +2123,20 @@ ipcMain.handle('recording:start', async (event, payload) => {
     if (!ffmpegPath || (typeof ffmpegPath === 'string' && !fs.existsSync(ffmpegPath))) {
       return { error: 'ffmpeg unavailable' };
     }
-    const args = ['-y', '-protocol_whitelist', 'http,https,tcp,tls,crypto,rtmp,rtmps,rtsp,rtsps,udp', '-i', String(url)];
+    // Scheme-specific whitelist: a remote playlist must never make ffmpeg read file:/concat:/subfile: or hop to other protocols.
+    const scheme = (() => { try { return new URL(String(url)).protocol.replace(':', ''); } catch (_) { return 'http'; } })();
+    const whitelist = /^rtmps?$/.test(scheme) ? 'rtmp,rtmps,tcp,tls,crypto'
+      : /^rtsps?$/.test(scheme) ? 'rtsp,rtsps,rtp,tcp,tls,udp,crypto'
+      : scheme === 'udp' ? 'udp,rtp'
+      : 'http,https,tcp,tls,crypto';
+    const args = ['-y', '-nostdin', '-protocol_whitelist', whitelist, '-rw_timeout', '30000000', '-i', String(url)];
     if (headers && typeof headers === 'object' && Object.keys(headers).length) {
-      const pairs = Object.entries(headers).map(([k, v]) => sanitizeFfmpegHeaderValue(k) + ': ' + sanitizeFfmpegHeaderValue(v)).filter((s) => s && s !== ':');
-      if (pairs.length) {
-        const hstr = pairs.join('') + '';
-        args.unshift('-headers', hstr);
-      }
+      // ffmpeg requires each header line to end with CRLF (joining with '' produced one malformed line)
+      const pairs = Object.entries(headers)
+        .map(([k, v]) => [sanitizeFfmpegHeaderValue(k).replace(/[:\s]+/g, '-'), sanitizeFfmpegHeaderValue(v)])
+        .filter(([k, v]) => k && v)
+        .map(([k, v]) => k + ': ' + v + '\r\n');
+      if (pairs.length) args.unshift('-headers', pairs.join(''));
     }
     args.push('-c', 'copy', '-f', 'mpegts', outPath);
   let proc = null;
@@ -2167,6 +2174,11 @@ ipcMain.handle('recording:start', async (event, payload) => {
   proc.on('exit', onEnd);
   proc.on('error', onEnd);
   return { ok: true, path: outPath, target };
+}
+
+ipcMain.handle('recording:start', async (event, payload) => {
+  assertTrustedSender(event);
+  return startRecordingCore(payload);
 });
 
 ipcMain.handle('recording:stop', async (event) => {
@@ -2221,15 +2233,13 @@ async function fetchBuffer(url, limit, timeoutMs = 120000) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
+    await assertSafeUrl(String(url || ''), {});
+    const res = await safeGet(String(url), {
       headers: { 'User-Agent': networkUA(), Accept: '*/*' },
-      signal: ctl.signal,
-      redirect: 'follow'
+      signal: ctl.signal, timeoutMs, guard: 'none'
     });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length > limit) throw new Error('Response too large');
-    return buf;
+    if (res.status < 200 || res.status >= 300) { try { res.stream.destroy(); } catch (_) {} throw new Error('HTTP ' + res.status); }
+    return await readLimited(res.stream, limit);
   } finally {
     clearTimeout(timer);
   }
@@ -2240,14 +2250,16 @@ async function refreshEpg(id, url) {
   let buf;
   if (isLocalAddress(url)) {
     const file = localPath(url);
+    if (!/\.(xml|xmltv|gz)$/i.test(file)) throw new Error('EPG file must be .xml, .xmltv or .gz');
     const stat = await fsp.stat(file);
+    if (!stat.isFile()) throw new Error('Not a file');
     if (stat.size > MAX_EPG_BYTES) throw new Error('EPG file too large');
     buf = await fsp.readFile(file);
-    if (/\.gz$/i.test(file)) buf = zlib.gunzipSync(buf);
+    if (/\.gz$/i.test(file)) buf = zlib.gunzipSync(buf, { maxOutputLength: MAX_EPG_BYTES });
   } else {
     buf = await fetchBuffer(url, MAX_EPG_BYTES);
     if (/\.gz$/i.test(String(url).split('?')[0]) || (buf[0] === 0x1f && buf[1] === 0x8b)) {
-      buf = zlib.gunzipSync(buf);
+      buf = zlib.gunzipSync(buf, { maxOutputLength: MAX_EPG_BYTES }); // gzip-bomb cap
     }
   }
   const programmes = parseEpg(buf.toString('utf8'));

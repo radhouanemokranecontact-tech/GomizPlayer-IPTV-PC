@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data: blob: http: https:; media-src 'self' file: blob: data: http: https:; connect-src 'self' blob: data: http: https: ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; font-src 'self' data:">
+        content="default-src 'self'; img-src 'self' data: blob: http: https:; media-src 'self' file: blob: data: http: https:; connect-src 'self' blob: data: http: https: ws: wss:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GomizPlayer IPTV</title>
+  <title>GomizPlayer PRO IPTV</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
           </svg>
         </div>
         <div class="brand-text">
-          <span class="brand-name">GomizPlayer IPTV</span>
+          <span class="brand-name">GomizPlayer <b style="color:var(--accent)">PRO</b></span>
           <span class="brand-sub" data-i18n="tagline">Your own player. Your own sources.</span>
         </div>
       </div>
@@ -39,6 +39,7 @@
       <div class="nav-sep"></div>
 
       <nav class="nav">
+        <button class="nav-item" data-route="pro"><span class="nav-ico" data-icon="pro"></span><span id="navProLabel">PRO Tools</span></button>
         <button class="nav-item" data-route="sources"><span class="nav-ico" data-icon="source"></span><span data-i18n="nav_sources">Sources</span></button>
         <button class="nav-item" data-route="settings"><span class="nav-ico" data-icon="settings"></span><span data-i18n="nav_settings">Settings</span></button>
       </nav>
@@ -253,11 +254,11 @@
 
   <script src="vendor/hls.min.js"></script>
   <script src="vendor/mpegts.min.js"></script>
-  <script src="vendor/dash.all.min.js"></script>
   <script src="../shared/classification.js"></script>
   <script src="widget-helpers.js"></script>
   <script src="i18n.js"></script>
   <script src="subtitles.js"></script>
+  <script src="pro.js"></script>
   <script src="player.js"></script>
   <script src="app.js"></script>
 </body>

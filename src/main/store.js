@@ -45,6 +45,9 @@ const DEFAULTS = {
     appLockPin: '',
     appLockHash: '',
     appLockSalt: '',
+    proHideDead: false,
+    proAutoFailover: true,
+    proParental: { enabled: false, keywords: [], lockedGroups: [], useDefaults: true },
     telemetryEnabled: false,
     analyticsEnabled: false,
     crashReportingEnabled: false,
@@ -311,10 +314,19 @@ class Store {
     if (raw.settings && typeof raw.settings === 'object' && !Array.isArray(raw.settings)) {
       clean.settings = this._sanitizeSettingsImport(raw.settings, DEFAULTS.settings, excludedSettings);
     }
+    if (clean.settings && Array.isArray(clean.settings.epgUrls)) {
+      clean.settings.epgUrls = clean.settings.epgUrls.slice(0, 50)
+        .filter((e) => e && typeof e === 'object' && typeof e.url === 'string')
+        .map((e) => ({
+          id: (typeof e.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(e.id)) ? e.id : crypto.randomBytes(6).toString('hex'),
+          url: e.url.slice(0, 4000),
+          name: typeof e.name === 'string' ? e.name.slice(0, 200) : e.url.slice(0, 200)
+        }));
+    }
     if (Array.isArray(raw.sources)) {
       clean.sources = raw.sources.slice(0, 1000).filter((s) => s && typeof s === 'object').map((s) => {
         const src = {
-          id: typeof s.id === 'string' ? s.id : crypto.randomBytes(8).toString('hex'),
+          id: (typeof s.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(s.id)) ? s.id : crypto.randomBytes(8).toString('hex'),
           name: typeof s.name === 'string' ? s.name.slice(0, 200) : 'Source',
           url: typeof s.url === 'string' ? s.url.slice(0, 4000) : '',
           kind: typeof s.kind === 'string' ? s.kind.slice(0, 40) : 'm3u',

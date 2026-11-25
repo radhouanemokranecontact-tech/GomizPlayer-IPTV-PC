@@ -192,6 +192,7 @@ const ICONS = {
   filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M6.5 12h11M10 18h4"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg>',
   tv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="12.5" rx="2.2"/><path d="m8 3.2 4 3.3 4-3.3"/></svg>',
+  pro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
   record: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>',
   lang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M2.5 12h19M12 2.5a15.5 15.5 0 0 1 0 19 15.5 15.5 0 0 1 0-19Z"/></svg>',
   weather: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 17.5h8.2a3.8 3.8 0 0 0 .3-7.6 5.2 5.2 0 0 0-9.8 1.3A3.3 3.3 0 0 0 7.5 17.5Z"/><path d="M12.2 5.2a3.2 3.2 0 0 1 4.6 2.8"/></svg>',
@@ -558,6 +559,8 @@ function ensurePlayer() {
       }
     },
     onRecordingChanged: () => { refreshRecordingStatus(); refreshRecordings(); },
+    autoFailover: () => !(state.settings && state.settings.proAutoFailover === false),
+    getAlternatives: async (item) => { try { const r = await window.api.pro.alternatives(item); return (r && r.items) || []; } catch (_) { return []; } },
     onFavorite: (item) => { toggleFavorite(item); if (player) player.updateFavBtn(); },
     isFavorite: (item) => isFavorite(item && item.key),
     onEpg: () => { openGuide(); },
@@ -847,6 +850,7 @@ function render() {
     case 'myvod': renderMyVod(); break;
     case 'downloads': renderDownloads(); break;
     case 'recordings': renderRecordings(); break;
+    case 'pro': renderPro(); break;
     case 'sources': renderSources(); break;
     case 'settings': renderSettings(); break;
     case 'search': renderSearch(); break;
@@ -857,6 +861,8 @@ function render() {
 }
 
 function applyStaticText() {
+  const proLabel = document.getElementById('navProLabel');
+  if (proLabel && window.GomizPro) proLabel.textContent = window.GomizPro.tr('nav');
   document.querySelectorAll('[data-i18n]').forEach((node) => {
     const key = node.getAttribute('data-i18n');
     const value = t(key);
@@ -1412,6 +1418,9 @@ function openGuide() {
 
     const play = makeButton(t('play'), { cls: 'btn btn-ghost btn-sm', icon: 'play', onClick: () => { closeModal(); playItem(channel, channels); } });
     row.appendChild(play);
+    if (channel.catchup && window.GomizPro) {
+      row.appendChild(makeButton(window.GomizPro.tr('catchup'), { cls: 'btn btn-ghost btn-sm', onClick: () => { closeModal(); window.GomizPro.openCatchup(channel, proCtx()); } }));
+    }
     table.appendChild(row);
   });
 
@@ -2197,6 +2206,21 @@ function renderDownloads() {
     list.appendChild(row);
   }
   view.appendChild(list);
+}
+
+function proCtx() {
+  return {
+    el, makeButton, pageHead, section, toggleRow, emptyBlock, toast, state, openModal, closeModal, playItem,
+    epgForChannel: (ch) => epgForChannel(ch),
+    render: () => render(),
+    reloadLibrary: async () => { await loadAllItems(); render(); },
+    onSettings: () => { if (player) player.opts.settings = state.settings; }
+  };
+}
+
+function renderPro() {
+  if (!window.GomizPro) { view.appendChild(pageHead('PRO', '')); return; }
+  window.GomizPro.render(view, proCtx());
 }
 
 function renderRecordings() {
