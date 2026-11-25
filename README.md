@@ -15,7 +15,7 @@
 - Full player: HLS, MPEG-TS, DASH, subtitles, screenshot, recording, timer, mini-player
 - **PRO Tools:** channel health scan (Library Doctor), auto-failover, dedupe, scheduled recordings, parental controls, catch-up and M3U export
 - 6 themes, EN/AR localization, backups, signed differential updates
-- **14/14 automated test suites pass**; built app verified via CDP with 0 JS errors
+- **14/14 automated test suites pass** (all also run in GitHub Actions on every push); built app verified via CDP with 0 JS errors
 
 > **Note:** This repository contains the desktop/Windows application only. The Android TV application lives in the separate `GomizPlayer-IPTV-APK` repository.
 
@@ -43,7 +43,7 @@ https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag
 - مشغّل كامل: HLS، MPEG-TS، DASH، ترجمة، لقطة شاشة، تسجيل، مؤقت، mini-player
 - **أدوات PRO:** فحص صحة القنوات، تحويل تلقائي، إزالة تكرار، جدولة تسجيل، رقابة أبوية، مشاهدة ما فات، تصدير M3U
 - 6 ثيمات، عربية/إنجليزية، نسخ احتياطي، تحديثات تفاضلية موقّعة
-- **14/14 مجموعة اختبار تنجح** + تحقق واقعي بـ CDP بصفر أخطاء
+- **14/14 مجموعة اختبار تنجح** (كلها تعمل أيضاً في GitHub Actions عند كل دفعة) + تحقق واقعي بـ CDP بصفر أخطاء
 
 > **ملاحظة:** يحتوي هذا المستودع على تطبيق سطح المكتب (Windows) فقط. تطبيق Android TV في مستودع منفصل `GomizPlayer-IPTV-APK`.
 

@@ -77,6 +77,7 @@
 | 14 | `test:media` | تكامل الوسائط (3 فحوصات) |
 
 **النتيجة: 14/14 PASS** (آخر تشغيل على الكود المدمج لـ v1.0.38).
+**GitHub Actions (`pc-ci.yml`) يشغّل الآن المجموعات الـ 14 كلها** عند كل push/PR إلى `main` (بعد أن كان 9 فقط).
 
 #### ب) واقعية (CDP داخل نافذة Electron حقيقية)
 | الفحص | النتيجة |
@@ -145,6 +146,8 @@ The **PRO** edition adds a smart-maintenance layer: channel health scan, automat
 - **Updates:** automatic check on launch, differential `.blockmap` updates, JSON backup without plaintext secrets, local error log.
 
 ### 3) Verification
+
+**CI:** `.github/workflows/pc-ci.yml` runs **all 14 suites** on every push/PR to `main` (previously 9).
 
 **Automated — 14/14 suites PASS:** ssrf, classification, classification-parity, secrets, secrets-audit, backup, update-guard, manifest-signature, epg-stream, net-guard, hardening, pro, pro-ipc, media.
 

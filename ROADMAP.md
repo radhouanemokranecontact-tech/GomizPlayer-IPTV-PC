@@ -9,7 +9,7 @@
 
 ### مكتمل ✅
 - P0: توقيع APK (Keystore) · Network Security Config · نسخ بيانات احتياطي · توقيع manifest Ed25519
-- P1: 14 مجموعة اختبار + تحقق واقعي بـ CDP · تراجع آمن · تشخيص محلي
+- P1: 14 مجموعة اختبار (كلها في CI) + تحقق واقعي بـ CDP · تراجع آمن · تشخيص محلي
 - P2: إفصاح الخصوصية · ترجمات EN/AR · ثيمات (6) · توثيق ترخيص FFmpeg · قرار الحجم
 - PRO: فحص صحة القنوات · تحويل تلقائي · إزالة تكرار · جدولة تسجيل · رقابة أبوية · Catch-up · تصدير M3U — **مُدمج بالكامل في 1.0.38**
 
@@ -40,7 +40,7 @@
 
 ### Done ✅
 - P0: APK signing, Network Security Config, data backup, Ed25519 manifest signing
-- P1: 14 test suites + real-window CDP verification, safe rollback, local diagnostics
+- P1: 14 test suites (all in CI) + real-window CDP verification, safe rollback, local diagnostics
 - P2: privacy disclosure, EN/AR translations, 6 themes, FFmpeg license notice, size decision
 - PRO: health scan, auto-failover, dedupe, scheduled recording, parental controls, catch-up, M3U export — **fully merged in 1.0.38**
 
