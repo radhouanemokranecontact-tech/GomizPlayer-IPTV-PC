@@ -51,6 +51,21 @@ jobs:
       - name: Secrets integration (Electron)
         run: npm run test:secrets
 
+      - name: Net guard
+        run: npm run test:net-guard
+
+      - name: Hardening regressions
+        run: npm run test:hardening
+
+      - name: PRO logic
+        run: npm run test:pro
+
+      - name: PRO IPC
+        run: npm run test:pro-ipc
+
+      - name: Media integration
+        run: npm run test:media
+
   build:
     runs-on: windows-latest
     needs: tests
