@@ -2,14 +2,14 @@
 
 [العربية](#العربية) | [English](#english)
 
-> **الإصدار الحالي: v1.0.36 (PRO)** — مبني على فحص الكود الفعلي وتشغيل النسخة المبنية داخل نافذة حقيقية (CDP). كل ما هو مذكور هنا مُنجز ومُختبَر؛ وما ليس مذكوراً غير موجود.
+> **الإصدار الحالي: v1.0.37 (PRO)** — مبني على فحص الكود الفعلي وتشغيل النسخة المبنية داخل نافذة حقيقية (CDP). كل ما هو مذكور هنا مُنجز ومُختبَر؛ وما ليس مذكوراً غير موجود.
 
 ---
 
 ## العربية
 
 ### 1) تعريف التطبيق
-**GomizPlayer PRO IPTV** هو تطبيق سطح مكتب Windows مبني بـ **Electron 45.3.2** + JavaScript، يعمل كمرافق متقدم لمشغّل Android TV. يوفّر تشغيل IPTV/VOD وإدارة المصادر وصيانة المكتبة على الكمبيوتر، بواجهة عربية/إنجليزية كاملة (EN/AR). الإصدار: **1.0.36**.
+**GomizPlayer PRO IPTV** هو تطبيق سطح مكتب Windows مبني بـ **Electron 45.3.2** + JavaScript، يعمل كمرافق متقدم لمشغّل Android TV. يوفّر تشغيل IPTV/VOD وإدارة المصادر وصيانة المكتبة على الكمبيوتر، بواجهة عربية/إنجليزية كاملة (EN/AR). الإصدار: **1.0.37**.
 
 النسخة **PRO** تضيف طبقة «أدوات صيانة ذكية» فوق المشغّل الأساسي: فحص صحة القنوات، تحويل تلقائي عند الفشل، إزالة التكرار، جدولة التسجيل، رقابة أبوية، مشاهدة ما فات (Catch-up)، وتصدير قائمة M3U.
 
@@ -76,7 +76,7 @@
 | 13 | `test:pro-ipc` | واجهة PRO IPC (4 فحوصات) |
 | 14 | `test:media` | تكامل الوسائط (3 فحوصات) |
 
-**النتيجة: 14/14 PASS** (آخر تشغيل على الكود المدمج لـ v1.0.36).
+**النتيجة: 14/14 PASS** (آخر تشغيل على الكود المدمج لـ v1.0.37).
 
 #### ب) واقعية (CDP داخل نافذة Electron حقيقية)
 | الفحص | النتيجة |
@@ -97,7 +97,7 @@
 - المُثبّت (NSIS): **144 MB** · المحمول (Portable): **128 MB** — يتضمّنان Electron/Chromium كاملاً للعمل بلا اتصال.
 - كود التطبيق نفسه صغير؛ الحجمmostly هو Chromium.
 - **15 معالج IPC** لأدوات PRO · **337 حزمة** في `package-lock.json`.
-- manifest موقّع Ed25519 (keyId `2f5e8004…`) + blockmap للإصدارين 1.0.35 و1.0.36.
+- manifest موقّع Ed25519 (keyId `2f5e8004…`) + blockmap للإصدارين 1.0.35 و1.0.37.
 
 ### 4) ما تم إنجازه (سجل مختصر)
 - بنية مستقرة: ملف `main.js` واحد بلا تقسيم (`core-utils.js` أُزيل نهائياً بعد أن سبّب مشاكل).
@@ -105,7 +105,7 @@
 - أمان: SSRF · safeStorage · توقيع التحديثات · trusted sender · إفصاح خصوصية.
 - نسخ احتياطي + تحديثات تفاضلية + تراجع آمن.
 - إصلاح أيقونة المشاهدة بعد اكتمال التحميل.
-- **دمج PRO الكامل وتوحيد الإصدار 1.0.36** مع استمرار سلسلة التحديث من 1.0.35.
+- **دمج PRO الكامل وتوحيد الإصدار 1.0.37** مع استمرار سلسلة التحديث من 1.0.35.
 - تصحيح وسم GitHub ليشير إلى commit الدمج (مصادر الإصدار صحيحة).
 
 ### 5) الحدود المعروفة
@@ -119,7 +119,7 @@
 ### 6) الخطط المستقبلية
 | الأولوية | العنصر | الحالة |
 |---|---|---|
-| P0 | مراقبة التحديث 1.0.36 لدى المستخدمين + التأكد من وصول PRO لهم | قيد المتابعة |
+| P0 | مراقبة التحديث 1.0.37 لدى المستخدمين + التأكد من وصول PRO لهم | قيد المتابعة |
 | P1 | تحسين زمن الإقلاع مع المكتبات الكبيرة (>15,000 قناة) — الفهرسة المسبقة وتأجيل構造 المشغّل | مخطط له (قياس CDP أظهر أن الفلترة ليست المشكلة الأساسية؛ النقل/الشبكة هي) |
 | P1 | توسيع Catch-up لمزوّدين إضافيين | حسب الطلب |
 | P2 | multiview / Chromecast / DLNA | مؤجل — يحتاج أجهزة حقيقية للاختبار |
@@ -131,7 +131,7 @@
 ## English
 
 ### 1) What this app is
-**GomizPlayer PRO IPTV** is a Windows desktop application built with **Electron 45.3.2** + JavaScript — an advanced companion to the Android TV player. It plays IPTV/VOD, manages sources and maintains the library, with full EN/AR localization. Current version: **1.0.36**.
+**GomizPlayer PRO IPTV** is a Windows desktop application built with **Electron 45.3.2** + JavaScript — an advanced companion to the Android TV player. It plays IPTV/VOD, manages sources and maintains the library, with full EN/AR localization. Current version: **1.0.37**.
 
 The **PRO** edition adds a smart-maintenance layer: channel health scan, automatic failover, deduplication, scheduled recording, parental controls, catch-up and M3U export.
 
@@ -162,16 +162,16 @@ The **PRO** edition adds a smart-maintenance layer: channel health scan, automat
 | `parental.get` | `{enabled:true, useDefaults:true, lockSet:true}` |
 | Play icon after real download | `Complete` + `file` → **Play** button ✅ |
 
-**Build stats:** NSIS installer **144 MB**, portable **128 MB** (mostly Chromium); **15 PRO IPC handlers**; **337 packages**; signed manifest + blockmaps for 1.0.35 and 1.0.36.
+**Build stats:** NSIS installer **144 MB**, portable **128 MB** (mostly Chromium); **15 PRO IPC handlers**; **337 packages**; signed manifest + blockmaps for 1.0.35 and 1.0.37.
 
 ### 4) Done
-Stable single-file main architecture (`core-utils.js` removed), 6 themes, SSRF/safeStorage/signed updates/trusted sender, backup + differential updates, completed-download Play icon fix, **full PRO merge as v1.0.36**, corrected GitHub tag pointing at the merge commit.
+Stable single-file main architecture (`core-utils.js` removed), 6 themes, SSRF/safeStorage/signed updates/trusted sender, backup + differential updates, completed-download Play icon fix, **full PRO merge as v1.0.37**, corrected GitHub tag pointing at the merge commit.
 
 ### 5) Known limits
 DRM does not work on PC (no ChromeCDM in Electron). DASH is partial — HLS/MPEG-TS are the reliable paths. Catch-up depends on provider support. Scheduling requires the app to stay open. Multiview, Chromecast/DLNA and Stalker are not implemented. No web installer (signed-content-only policy).
 
 ### 6) Roadmap
-- **P0:** monitor the 1.0.36 rollout and confirm PRO reaches existing users.
+- **P0:** monitor the 1.0.37 rollout and confirm PRO reaches existing users.
 - **P1:** improve startup with very large libraries (>15,000 channels) — pre-indexing and lazy player init (measurements show IPC transfer/network is the real bottleneck, not filtering).
 - **P1:** extend catch-up to more providers on request.
 - **P2:** multiview / Chromecast / DLNA — needs real hardware; beta channels + staged rollout — needs multi-release publishing.

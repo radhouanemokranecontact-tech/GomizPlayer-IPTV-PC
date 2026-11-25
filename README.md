@@ -7,7 +7,7 @@
 
 ## English
 
-**GomizPlayer PRO IPTV** is the Windows desktop companion for the Android TV player, built with **Electron**. Current release: **v1.0.36**.
+**GomizPlayer PRO IPTV** is the Windows desktop companion for the Android TV player, built with **Electron**. Current release: **v1.0.37**.
 
 ### Features
 - M3U / M3U8 playlist and Xtream Codes source management, with encrypted credentials
@@ -29,13 +29,13 @@ npm start
 ```
 
 ### Latest release
-https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag/v1.0.36
+https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag/v1.0.37
 
 ---
 
 ## العربية
 
-**GomizPlayer PRO IPTV** هو التطبيق المرافق لنظام Windows لمشغّل Android TV، مبني بـ **Electron**. الإصدار الحالي: **v1.0.36**.
+**GomizPlayer PRO IPTV** هو التطبيق المرافق لنظام Windows لمشغّل Android TV، مبني بـ **Electron**. الإصدار الحالي: **v1.0.37**.
 
 ### المميزات
 - إدارة قوائم M3U / M3U8 واشتراكات Xtream Codes مع كلمات مرور مُشفّرة
@@ -51,4 +51,4 @@ https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag
 يضمّ المُثبّت تشغيل Electron/Chromium كاملاً ليعمل التطبيق **دون اتصال وبلا تبعيات خارجية**. التحديثات **تفاضلية** (`.blockmap`) وكل manifest **موقّع Ed25519**. لم نستخدم web-installer لأنه يتطلب تنزيل محتوى غير موقّع وقت التثبيت.
 
 ### أحدث إصدار
-https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag/v1.0.36
+https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/tag/v1.0.37
