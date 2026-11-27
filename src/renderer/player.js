@@ -842,13 +842,7 @@ class Player {
         this.dash = null;
       }
     }
-    // fallback: native attempt
-    this.startNative(url);
-    setTimeout(() => {
-      if (this.loadToken === token && this.video && this.video.error) {
-        this.showError('DASH (.mpd) is not fully supported in this build.');
-      }
-    }, 4000);
+    if (this.loadToken === token) this.showError('DASH playback engine could not be started.');
   }
 
   startNative(url) {
