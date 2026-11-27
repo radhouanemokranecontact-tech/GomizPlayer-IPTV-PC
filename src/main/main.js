@@ -212,7 +212,10 @@ function setupAutoUpdates() {
     autoUpdater.on('download-progress', (p) => sendUpdateStatus({ status: 'downloading', progress: Math.round(Number(p && p.percent || 0)) }));
     autoUpdater.on('update-downloaded', (info) => sendUpdateStatus({ status: 'downloaded', version: info && info.version || '', progress: 100 }));
     if (!SMOKE && !SCREENSHOTS && app.isPackaged) {
-      setTimeout(() => { autoUpdater.checkForUpdates().catch(() => {}); }, 5000);
+      setTimeout(async () => {
+        try { await autoUpdater.checkForUpdates(); }
+        catch (err) { sendUpdateStatus({ status: 'error', message: String(err && err.message || err || 'update check failed') }); }
+      }, 5000);
     }
   } catch (_) {}
 }
@@ -1281,8 +1284,15 @@ function registerIpc() {
   });
   ipcMain.handle('update:check', async (event) => {
     assertTrustedSender(event);
-    if (!autoUpdater) return { ok: false, reason: 'unavailable' };
-    try { const r = await autoUpdater.checkForUpdates(); return { ok: true, version: r && r.updateInfo && r.updateInfo.version || '' }; }
+    if (!autoUpdater) {
+      sendUpdateStatus({ status: 'error', message: 'Updater is unavailable in this build' });
+      return { ok: false, reason: 'unavailable' };
+    }
+    try {
+      const r = await autoUpdater.checkForUpdates();
+      if (r && r.updateInfo) lastUpdateInfo = r.updateInfo;
+      return { ok: true, version: r && r.updateInfo && r.updateInfo.version || '' };
+    }
     catch (e) { sendUpdateStatus({ status: 'error', message: String(e && e.message || e) }); return { ok: false, reason: String(e && e.message || e) }; }
   });
   ipcMain.handle('update:install', (event) => {
@@ -1299,7 +1309,7 @@ function registerIpc() {
   async function verifyUpdateManifest() {
     try {
       const { verify, matchesUpdateInfo } = require('./manifest-verify');
-      const url = 'https://raw.githubusercontent.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/main/RELEASE_MANIFEST.yml';
+      const url = 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/latest/download/latest.yml';
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), 20000);
       let text;
@@ -1321,11 +1331,16 @@ function registerIpc() {
   // User-initiated download (no automatic download of unsigned updates)
   ipcMain.handle('update:download', async (event) => {
     assertTrustedSender(event);
-    if (!autoUpdater) return { ok: false, error: 'unavailable' };
+    if (!autoUpdater) {
+      const error = 'Updater is unavailable in this build';
+      sendUpdateStatus({ status: 'error', message: error });
+      return { ok: false, error };
+    }
     const v = await verifyUpdateManifest();
     if (!v.ok) {
-      sendUpdateStatus({ status: 'error', message: '' });
-      return { ok: false, error: 'manifest-verification-failed: ' + v.reason };
+      const error = 'manifest-verification-failed: ' + v.reason;
+      sendUpdateStatus({ status: 'error', message: error });
+      return { ok: false, error };
     }
     try {
       await autoUpdater.downloadUpdate();

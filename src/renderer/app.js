@@ -3405,7 +3405,8 @@ function settingsAbout(panel) {
   }}));
   const checkBtn = makeButton(t('check_updates'), { cls: 'btn btn-ghost btn-sm', icon: 'refresh', onClick: async () => {
     try {
-      await window.api.updates.check();
+      const r = await window.api.updates.check();
+      if (r && r.ok === false) renderUpdate({ status: 'error', message: r.reason || '' });
     } catch (e) {
       toast(e && e.message ? e.message : t('error'), 'err');
     }
@@ -3441,7 +3442,7 @@ function settingsAbout(panel) {
       downloading: (t('update_downloading') || 'Downloading update') + ver + (st.progress ? (' — ' + st.progress + '%') : ''),
       downloaded: (t('update_ready') || 'Update ready to install') + ver,
       none: (state.info ? state.info.version : '') + ' — ' + t('up_to_date'),
-      error: '',
+      error: (t('update_error') || 'Update failed') + (st.message ? ': ' + st.message : ''),
       idle: ''
     };
     upStatus.textContent = map[st.status] || '';
@@ -3458,7 +3459,7 @@ function settingsAbout(panel) {
       if (!s) return;
       if (s.status === 'available') toast((t('update_available') || 'Update available') + (s.version ? (' v' + s.version) : ''), 'ok');
       else if (s.status === 'downloaded') toast((t('update_ready') || 'Update ready to install') + (s.version ? (' v' + s.version) : ''), 'ok');
-      // update errors are silent in the UI (details kept in logs only)
+      else if (s.status === 'error') toast((t('update_error') || 'Update failed') + (s.message ? ': ' + s.message : ''), 'err');
       else if (s.status === 'none') toast(t('up_to_date'), 'ok');
     });
   } else if (window.api.updates && window.api.updates.status) {
@@ -4104,7 +4105,10 @@ function bindGlobal() {
         cls: 'btn btn-primary',
         onClick: async () => {
           // Keep the modal open: progress events replace it with a progress view.
-          try { await window.api.updates.download(); } catch (_) {}
+          try {
+            const result = await window.api.updates.download();
+            if (result && result.ok === false) showUpdateError(result.error || '');
+          } catch (e) { showUpdateError(e && e.message ? e.message : ''); }
         }
       }));
       openModalWithActions(wrap, actions);
@@ -4113,6 +4117,16 @@ function bindGlobal() {
 
   // Persistent progress UI — GitHub downloads can take a while, so always show %.
   let updateProgressNode = null;
+  function showUpdateError(message) {
+    updateProgressNode = null;
+    closeModal();
+    const wrap = el('div');
+    wrap.appendChild(el('h2', null, t('update_error') || 'Update failed'));
+    wrap.appendChild(el('p', 'lead', message || (t('update_error') || 'Update failed')));
+    const actions = el('div', 'modal-actions');
+    actions.appendChild(makeButton(t('close') || 'Close', { cls: 'btn btn-ghost', onClick: () => closeModal() }));
+    openModalWithActions(wrap, actions);
+  }
   function showUpdateProgress(pct) {
     if (!updateProgressNode || !updateProgressNode.isConnected) {
       const wrap = el('div');
