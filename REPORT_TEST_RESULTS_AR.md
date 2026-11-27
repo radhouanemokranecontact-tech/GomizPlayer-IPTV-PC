@@ -416,7 +416,7 @@
 ## 10. متابعة الإصدار 2.0.1 (2026-11-27)
 
 ### ما تم التحقق منه محلياً
-- تم بناء NSIS وPortable بنجاح في `dist/v2.0.1/`؛ حجم Setup هو 173,281,844 بايت وحجم Portable هو 139,037,957 بايت.
+- تم بناء NSIS وPortable بنجاح في `dist/v2.0.1/`؛ حجم Setup هو 151,258,108 بايت وحجم Portable هو 134,930,329 بايت.
 - يحتوي `app.asar` على `src/renderer/vendor/dash.all.min.js` وملف ترخيص dash.js.
 - نجحت فحوصات `test:manifest-signature` و`test:update-guard` و`test:net-guard` و`test:hardening` و`test:secrets:audit` و`test:secrets` و`test:pro-ipc` و`test:player-engine` و`test:pro`.
 - نجح اختبار Electron الفعلي لتشفير/فك تشفير safeStorage، ورفض كلمة المرور الخاطئة، وعدم إرسال كلمة مرور فارغة عند فشل فك التشفير.
