@@ -1,4 +1,4 @@
-name: Build signed PC release draft
+name: Build PC release draft
 
 on:
   workflow_dispatch:
@@ -17,17 +17,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate release signing secrets
-        shell: pwsh
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.UPDATE_SIGNING_PRIVATE_KEY }}
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) { throw 'Repository secret WIN_CSC_LINK is required for Authenticode signing' }
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) { throw 'Repository secret WIN_CSC_KEY_PASSWORD is required for Authenticode signing' }
-          if ([string]::IsNullOrWhiteSpace($env:UPDATE_SIGNING_PRIVATE_KEY)) { throw 'Repository secret UPDATE_SIGNING_PRIVATE_KEY is required for update manifest signing' }
 
       - uses: actions/setup-node@v4
         with:
@@ -54,12 +43,9 @@ jobs:
           }
 
       - name: Build Windows x64 packages
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: npm run dist
 
-      - name: Verify Windows signatures
+      - name: Verify Windows package outputs
         shell: pwsh
         run: |
           $version = (node -p "require('./package.json').version").Trim()
@@ -69,8 +55,6 @@ jobs:
           )
           foreach ($artifact in $artifacts) {
             if (!(Test-Path -LiteralPath $artifact)) { throw "Release artifact missing: $artifact" }
-            $signature = Get-AuthenticodeSignature -LiteralPath $artifact
-            if ($signature.Status -ne 'Valid') { throw "Authenticode signature is not valid: $artifact ($($signature.Status))" }
           }
 
       - name: Validate tag and sign updater manifest
@@ -106,9 +90,10 @@ jobs:
           @"
           GomizPlayer PRO IPTV $version (Windows x64)
 
-          This is a draft release. Review the artifacts, signature, and release notes before publishing.
+          This is a draft release for review. Windows executables are not Authenticode-signed.
 
-          Assets: NSIS installer, portable executable, and signed electron-updater manifest.
+          Assets: NSIS installer, portable executable, and Ed25519-signed electron-updater manifest.
+          Windows may display an unknown-publisher warning. The app verifies the signed manifest and artifact hashes before downloading an update.
           "@ | Set-Content -LiteralPath $notes -Encoding utf8
           $assets = @(
             "dist/v$version/GomizPlayer-PRO-IPTV-Setup-$version.exe",
@@ -119,3 +104,4 @@ jobs:
           foreach ($asset in $assets) { if (!(Test-Path -LiteralPath $asset)) { throw "Release asset missing: $asset" } }
           gh release create $env:RELEASE_TAG @assets --draft --target $env:GITHUB_SHA --title "GomizPlayer PRO IPTV v$version (Windows)" --notes-file $notes
           if ($LASTEXITCODE -ne 0) { throw 'GitHub draft release creation failed' }
+
