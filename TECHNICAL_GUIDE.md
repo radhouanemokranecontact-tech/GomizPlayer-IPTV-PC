@@ -91,4 +91,4 @@ Gomiz Player IPTV Desktop is a **Windows Electron** companion app (v2.0.1) for m
 | UI | `src/renderer/pro.js` | PRO page + catch-up modal; EN/AR strings; text via `textContent` only |
 
 **Data safety:** `productName` changed to *GomizPlayer PRO IPTV*, but `userData` is pinned to the original `GomizPlayer IPTV` folder, so upgrades keep all data.
-**Tests:** `test:net-guard`, `test:hardening`, `test:pro`, `test:pro-ipc` run in CI; `tools/ui-smoke.js` (Playwright) is an optional UI check.
+**Tests:** `test:net-guard`, `test:hardening`, `test:pro`, `test:pro-ipc` run in CI. Run `npm run test:ui` for Playwright UI checks; after `npm install`, install Chromium with `npx playwright install chromium`. The Multiview UI test skips its media check when FFmpeg is unavailable.
