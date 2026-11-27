@@ -1,6 +1,8 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, shell, session, clipboard, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, session, clipboard, safeStorage, net: electronNet } = require('electron');
+// fetch that honours the app's proxy setting (Node's global fetch ignores Electron's session proxy)
+const sysFetch = (url, init) => (electronNet && typeof electronNet.fetch === 'function' ? electronNet.fetch(url, init) : fetch(url, init));
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -10,8 +12,6 @@ let autoUpdater = null;
 try { ({ autoUpdater } = require('electron-updater')); } catch (_) { autoUpdater = null; }
 
 const crypto = require('crypto');
-const net = require('net');
-const dns = require('dns').promises;
 // ===== Inlined helpers (merged from core-utils — radical fix) =====
 function sleep(ms) { return new Promise((r) => setTimeout(r, Math.max(0, ms || 0))); }
 
@@ -27,7 +27,7 @@ function isPathInsideDir(targetPath, dirPath) {
   } catch (_) { return false; }
 }
 
-const { assertSafeUrl, isPrivateOrLocalHostname, safeGet, readLimited } = require('./net-guard');
+const { assertSafeUrl, safeGet, readLimited } = require('./net-guard');
 
 function safeName(value) {
   let s = String(value || 'recording');
@@ -41,7 +41,6 @@ function safeName(value) {
 
 const { Store } = require('./store');
 const { parseM3U, xtreamUrl, xtreamAccountUrl, looksLikePlaylist, isHlsPlaylist, keyFor } = require('./m3u');
-const classification = require('../shared/classification');
 const { parseEpg } = require('./epg');
 const { Downloads } = require('./downloads');
 const proIpc = require('./pro/ipc');
@@ -396,9 +395,9 @@ async function postTelemetry(endpoint, payload) {
       || /counterapi\.dev\//i.test(ep)
       || /abacus\.jasoncameron\.dev\//i.test(ep);
     if (isCounterGet) {
-      await fetch(ep, { method: 'GET', signal: ctl.signal, headers: { 'User-Agent': DEFAULT_UA } });
+      await sysFetch(ep, { method: 'GET', signal: ctl.signal, headers: { 'User-Agent': DEFAULT_UA } });
     } else {
-      await fetch(ep, {
+      await sysFetch(ep, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'User-Agent': DEFAULT_UA },
         body: JSON.stringify(payload),
@@ -654,6 +653,7 @@ function createWindow() {
       }
       let detail = '';
       let smokeEpg = '';
+      let smokeHealthPlaylist = '';
       if (ready) {
         try {
           const now = Date.now();
@@ -674,6 +674,10 @@ function createWindow() {
           xml += '</tv>';
           smokeEpg = path.join(app.getPath('userData'), 'smoke-epg.xml');
           fs.writeFileSync(smokeEpg, xml);
+          // Keep the PRO health scan deterministic and offline: one explicit live
+          // channel with an unsupported scheme completes immediately as unknown.
+          smokeHealthPlaylist = path.join(app.getPath('userData'), 'smoke-health.m3u');
+          fs.writeFileSync(smokeHealthPlaylist, '#EXTM3U\n#EXTINF:-1 group-title="Live Channels",Smoke Health Probe\nfile:///smoke-health.ts\n', 'utf8');
         } catch (_) {}
       }
       if (ready) {
@@ -1096,13 +1100,22 @@ function createWindow() {
                 log.push('pro-sched-remove:' + (rm && rm.ok ? 'ok' : 'FAIL'));
                 const cu = await window.api.pro.catchupUrl({ url: 'http://h.example.com/live/u/p/77.ts', catchup: { type: 'xc', days: 3 } }, Date.now() - 3600000, Date.now() - 1800000);
                 log.push('pro-catchup:' + (cu && cu.ok && cu.url.includes('/timeshift/u/p/30/') ? 'ok' : 'FAIL'));
-                const scanDone = new Promise((resolve) => { window.api.pro.health.onDone((x) => resolve(x)); setTimeout(() => resolve({ timeout: true }), 40000); });
-                const sc = await window.api.pro.health.scan({ sourceId: 'all', timeoutMs: 3000, concurrency: 4 });
+                const healthFixture = await window.api.sources.add({ name: 'Smoke health fixture', url: ${JSON.stringify(smokeHealthPlaylist)}, kind: 'playlist' });
+                const healthSourceId = healthFixture && healthFixture.source && healthFixture.source.id;
+                const scanDone = new Promise((resolve) => {
+                  let off = () => {};
+                  const timer = setTimeout(() => { off(); resolve({ timeout: true }); }, 10000);
+                  off = window.api.pro.health.onDone((x) => { clearTimeout(timer); off(); resolve(x); });
+                });
+                const sc = healthSourceId
+                  ? await window.api.pro.health.scan({ sourceId: healthSourceId, timeoutMs: 2000, concurrency: 1 })
+                  : { error: healthFixture && healthFixture.error || 'health-fixture-failed' };
                 const fin = sc && sc.started ? await scanDone : sc;
                 log.push('pro-health-scan:' + (fin && !fin.timeout && !fin.error && fin.total > 0 ? 'ok(' + fin.ok + '/' + fin.dead + ')' : 'FAIL(' + JSON.stringify(fin) + ')'));
-                const sum = await window.api.pro.health.summary('all');
-                log.push('pro-health-summary:' + (sum && (sum.ok + sum.dead) > 0 ? 'ok' : 'FAIL'));
+                const sum = healthSourceId ? await window.api.pro.health.summary(healthSourceId) : null;
+                log.push('pro-health-summary:' + (sum && (sum.ok + sum.dead + sum.unknown) > 0 ? 'ok' : 'FAIL'));
                 await window.api.pro.health.clear();
+                if (healthSourceId) await window.api.sources.remove(healthSourceId);
                 const exp = await window.api.pro.parental.set({ enabled: true, keywords: ['zzzz'], lockedGroups: [] });
                 log.push('pro-parental-set:' + (exp && exp.ok ? 'ok' : 'FAIL'));
                 await window.api.pro.parental.set({ enabled: false, keywords: [], lockedGroups: [] });
@@ -1269,14 +1282,8 @@ function registerIpc() {
   ipcMain.handle('update:check', async (event) => {
     assertTrustedSender(event);
     if (!autoUpdater) return { ok: false, reason: 'unavailable' };
-    try {
-      const r = await autoUpdater.checkForUpdates();
-      // Bind the result immediately: the 'update-available' event may arrive later
-      // (or not at all when checking again), which left lastUpdateInfo null and made
-      // the download button fail with "no-update-info".
-      if (r && r.updateInfo) lastUpdateInfo = r.updateInfo;
-      return { ok: true, version: r && r.updateInfo && r.updateInfo.version || '' };
-    } catch (e) { sendUpdateStatus({ status: 'error', message: String(e && e.message || e) }); return { ok: false, reason: String(e && e.message || e) }; }
+    try { const r = await autoUpdater.checkForUpdates(); return { ok: true, version: r && r.updateInfo && r.updateInfo.version || '' }; }
+    catch (e) { sendUpdateStatus({ status: 'error', message: String(e && e.message || e) }); return { ok: false, reason: String(e && e.message || e) }; }
   });
   ipcMain.handle('update:install', (event) => {
     assertTrustedSender(event);
@@ -1292,14 +1299,12 @@ function registerIpc() {
   async function verifyUpdateManifest() {
     try {
       const { verify, matchesUpdateInfo } = require('./manifest-verify');
-      // Verify the SAME manifest electron-updater reads, from the release itself.
-      // A separate copy in the repo went stale (1.0.33) and caused version-mismatch.
-      const url = 'https://github.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/releases/latest/download/latest.yml';
+      const url = 'https://raw.githubusercontent.com/radhouanemokranecontact-tech/GomizPlayer-IPTV-PC/main/RELEASE_MANIFEST.yml';
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), 20000);
       let text;
       try {
-        const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+        const res = await sysFetch(url, { signal: ctl.signal, cache: 'no-store' });
         if (!res.ok) return { ok: false, reason: 'manifest-unreachable' };
         text = await res.text();
       } finally { clearTimeout(timer); }
@@ -1946,7 +1951,7 @@ function registerIpc() {
       }
 
       // Wipe all app userData contents (app-owned profile/storage)
-      if (!isDangerous(root) && root.includes('gomizplayer')) {
+      if (!isDangerous(root) && root.toLowerCase().includes('gomizplayer')) {
         safeRmContents(root, 'userData');
         try { fs.mkdirSync(root, { recursive: true }); } catch (_) {}
       } else if (!isDangerous(root)) {

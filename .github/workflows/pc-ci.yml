@@ -27,6 +27,21 @@ jobs:
       - name: SSRF guards
         run: npm run test:ssrf
 
+      - name: Net guard (real module)
+        run: npm run test:net-guard
+
+      - name: Hardening regressions
+        run: npm run test:hardening
+
+      - name: PRO features
+        run: npm run test:pro
+
+      - name: PRO IPC integration
+        run: npm run test:pro-ipc
+
+      - name: Media integration (real ffmpeg + downloads)
+        run: npm run test:media
+
       - name: Source classification
         run: npm run test:classification
 
@@ -42,6 +57,9 @@ jobs:
       - name: Signed update manifest verification
         run: npm run test:manifest-signature
 
+      - name: Multiview failed-stream actions regression
+        run: npm run test:multiview-overlay
+
       - name: EPG streaming parser
         run: npm run test:epg-stream
 
@@ -50,21 +68,6 @@ jobs:
 
       - name: Secrets integration (Electron)
         run: npm run test:secrets
-
-      - name: Net guard
-        run: npm run test:net-guard
-
-      - name: Hardening regressions
-        run: npm run test:hardening
-
-      - name: PRO logic
-        run: npm run test:pro
-
-      - name: PRO IPC
-        run: npm run test:pro-ipc
-
-      - name: Media integration
-        run: npm run test:media
 
   build:
     runs-on: windows-latest

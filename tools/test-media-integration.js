@@ -15,9 +15,17 @@ for (const p of ['/usr/local/bin/ffmpeg', '/usr/bin/ffmpeg']) cands.push(p);
 for (const c of cands) { if (works(c)) { ffmpeg = c; break; } }
 if (!ffmpeg) { console.log('SKIP no working ffmpeg available'); process.exit(0); }
 console.log('using ffmpeg: ' + ffmpeg);
-// make downloads.js use the verified binary
-try { const id = require.resolve('ffmpeg-static'); require.cache[id] = { id, filename: id, loaded: true, exports: ffmpeg }; } catch (_) {}
+// Make downloads.js use the verified binary in both installed and dependency-free test environments.
+// Intercept the package request before loading downloads.js; require.cache alone cannot
+// stub a package that is not installed in this checkout.
+const Module = require('module');
+const originalLoad = Module._load;
+Module._load = function (request, parent, isMain) {
+  if (request === 'ffmpeg-static') return ffmpeg;
+  return originalLoad.call(this, request, parent, isMain);
+};
 const { Downloads } = require(path.join(__dirname, '..', 'src', 'main', 'downloads.js'));
+Module._load = originalLoad;
 let failed = 0; const t = (n, c, x) => { console.log((c ? 'PASS ' : 'FAIL ') + n + (c ? '' : ' :: ' + (x || ''))); if (!c) failed++; };
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gomiz-media-'));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

@@ -30,7 +30,17 @@ function cachePath(dir, name) {
   return full.startsWith(d + path.sep) ? full : null;
 }
 for (const id of ['../../x', '/../../../etc/passwd', '..\\..\\win', 'a/../../b']) {
-  const p = cachePath('/cache', 'source-' + id); t('cachePath contains ' + JSON.stringify(id), p && p.startsWith('/cache/'));
+  const base = path.resolve('/cache');
+  const p = cachePath(base, 'source-' + id);
+  const relative = p && path.relative(base, p);
+  t('cachePath contains ' + JSON.stringify(id), !!relative && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative));
+}
+{
+  const { parseM3U } = require('../src/main/m3u');
+  const txt = '#EXTM3U\n#EXTINF:-1,A\nhttp://x.com/a.m3u8\n#EXTINF:-1,B\nfile:///etc/passwd\n#EXTINF:-1,C\njavascript:alert(1)\n#EXTINF:-1,D\ndata:text/html,x\n';
+  const names = (r) => (r.items || r).map((i) => i.name).join(',');
+  t('remote playlist drops file/javascript/data URLs', names(parseM3U(txt, { baseUri: 'https://p.com/l.m3u' })) === 'A');
+  t('local playlist keeps file URLs but drops script/data', names(parseM3U(txt, { baseUri: '' })) === 'A,B');
 }
 console.log(failed ? 'HARDENING TESTS FAILED' : 'ALL HARDENING TESTS PASSED');
 process.exit(failed ? 1 : 0);

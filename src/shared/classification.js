@@ -21,16 +21,24 @@
 
   // Token/word-boundary aware matching to reduce false positives (e.g. "alive", "olive").
   function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  const TOKEN_REGEX_CACHE = new Map();
+  const TOKEN_REGEX_CACHE_LIMIT = 256;
+  function tokenRegex(token) {
+    const t = String(token).toLowerCase();
+    let re = TOKEN_REGEX_CACHE.get(t);
+    if (re) return re;
+    const isAsciiWord = /^[a-z0-9]+$/.test(t);
+    // For non-ASCII (Arabic/French accents) use a looser boundary that still avoids joining letters.
+    re = isAsciiWord
+      ? new RegExp('(^|[^a-z0-9])' + escapeRe(t) + '([^a-z0-9]|$)', 'i')
+      : new RegExp('(^|[\\s\\|\\-_/\\[\\]\\(\\):,;.])' + escapeRe(t) + '([\\s\\|\\-_/\\[\\]\\(\\):,;.]|$)', 'i');
+    if (TOKEN_REGEX_CACHE.size >= TOKEN_REGEX_CACHE_LIMIT) TOKEN_REGEX_CACHE.clear();
+    TOKEN_REGEX_CACHE.set(t, re);
+    return re;
+  }
   function hasToken(text, token) {
     if (!text || !token) return false;
-    const t = String(token).toLowerCase();
-    const src = String(text).toLowerCase();
-    const isAsciiWord = /^[a-z0-9]+$/.test(t);
-    if (isAsciiWord) {
-      return new RegExp('(^|[^a-z0-9])' + escapeRe(t) + '([^a-z0-9]|$)', 'i').test(src);
-    }
-    // For non-ASCII (Arabic/French accents) use a looser boundary that still avoids joining letters.
-    return new RegExp('(^|[\\s\\|\\-_/\\[\\]\\(\\):,;.])' + escapeRe(t) + '([\\s\\|\\-_/\\[\\]\\(\\):,;.]|$)', 'i').test(src);
+    return tokenRegex(token).test(String(text).toLowerCase());
   }
   function hasAnyToken(text, tokens) {
     for (const t of tokens) if (hasToken(text, t)) return true;

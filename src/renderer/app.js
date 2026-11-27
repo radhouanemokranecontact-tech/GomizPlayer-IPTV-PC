@@ -142,7 +142,6 @@ function openModalWithActions(wrap, actions) {
 
 const ICONS = {
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.6 12 3.2l9 7.4V20a1 1 0 0 1-1 1h-5.4v-6.2H9.4V21H4a1 1 0 0 1-1-1v-9.4Z"/></svg>',
-  live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="12.5" rx="2.4"/><path d="m8.5 3 3.5 3.5L15.5 3"/><circle cx="8.7" cy="12.7" r="1.1" fill="currentColor" stroke="none"/><path d="M15.5 10.4c1 .8 1 2.4 0 3.2M18 8.4c2 1.7 2 5.5 0 7.2"/></svg>',
   film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="19" height="15" rx="2.4"/><path d="M7 4.5v15M17 4.5v15M2.5 9.5h4.5M2.5 14.5h4.5M17 9.5h4.5M17 14.5h4.5"/></svg>',
   series: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8" width="19" height="12.5" rx="2.2"/><path d="M5.5 8V5.4a1.4 1.4 0 0 1 1.4-1.4h10.2a1.4 1.4 0 0 1 1.4 1.4V8M8 3.5 6 6.5M12 3.5 10 6.5M16 3.5l-2 3"/></svg>',
   heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3S3.5 15.4 3.5 9.4A4.6 4.6 0 0 1 12 6.6a4.6 4.6 0 0 1 8.5 2.8c0 6-8.5 10.9-8.5 10.9Z"/></svg>',
@@ -192,6 +191,7 @@ const ICONS = {
   filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M6.5 12h11M10 18h4"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8h.01"/></svg>',
   tv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="12.5" rx="2.2"/><path d="m8 3.2 4 3.3 4-3.3"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>',
   pro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
   record: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>',
   lang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M2.5 12h19M12 2.5a15.5 15.5 0 0 1 0 19 15.5 15.5 0 0 1 0-19Z"/></svg>',
@@ -745,7 +745,21 @@ function setViewScroll(top) {
   view.style.scrollBehavior = prev;
 }
 
+function openMultiview() {
+  if (!window.GomizMultiview) return;
+  if (player && player.open) { try { player.close(true); } catch (_) {} }
+  window.GomizMultiview.open({
+    items: () => state.items,
+    settings: () => state.settings,
+    patchSettings: (p) => patchSettings(p),
+    autoFailover: () => !(state.settings && state.settings.proAutoFailover === false),
+    getAlternatives: async (item) => { try { const r = await window.api.pro.alternatives(item); return (r && r.items) || []; } catch (_) { return []; } },
+    toast
+  });
+}
+
 function navigate(route, opts = {}) {
+  if (route === 'multiview') { openMultiview(); return; }
   // There is no standalone Live TV page anymore: the sidebar and every
   // "view all" link open the receiver on the last watched channel.
   if (route === 'live') {
@@ -863,6 +877,8 @@ function render() {
 function applyStaticText() {
   const proLabel = document.getElementById('navProLabel');
   if (proLabel && window.GomizPro) proLabel.textContent = window.GomizPro.tr('nav');
+  const mvLabel = document.getElementById('navMvLabel');
+  if (mvLabel && window.GomizMultiview) mvLabel.textContent = window.GomizMultiview.tr('title');
   document.querySelectorAll('[data-i18n]').forEach((node) => {
     const key = node.getAttribute('data-i18n');
     const value = t(key);
@@ -3523,7 +3539,7 @@ function makeDarkSelect(options, value, onChange, opts = {}) {
     }
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (menu.hidden) open(); else close(); }
   });
-  Object.defineProperty(wrap, 'value', { get: () => current, set: (v) => setValue(v) });
+  Object.defineProperty(wrap, 'value', { get: () => current, set: (v) => { setValue(v); } });
   setValue(value);
   return wrap;
 }
@@ -4267,6 +4283,7 @@ boot();
 
 /* Test / debugging hook (harmless in normal use). */
 window.__novaTest = {
+  openMultiview: () => openMultiview(),
   state,
   player: () => player,
   play: (item, list) => playItem(item, list),

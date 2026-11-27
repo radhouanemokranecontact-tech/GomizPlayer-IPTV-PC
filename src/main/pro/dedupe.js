@@ -67,7 +67,7 @@ function buildIndex(items, opts = {}) {
   const clusters = [];
   const byKey = new Map();
   const sameUrl = [];
-  for (const [k, list] of groups) {
+  for (const [, list] of groups) {
     // identical URLs are the same stream, not alternatives
     const seen = new Set(); const uniq = [];
     for (const it of list) { if (!seen.has(it.url)) { seen.add(it.url); uniq.push(it); } else sameUrl.push(it); }

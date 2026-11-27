@@ -26,6 +26,20 @@ function esc(value) {
     .replace(/"/g, '&quot;');
 }
 
+/* Narrow, validated HTTP headers for browser-based media engines. */
+function normalizePlaybackHeaders(input) {
+  const allowed = { 'user-agent': 'User-Agent', referer: 'Referer', referrer: 'Referer', origin: 'Origin' };
+  const out = {};
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return out;
+  Object.keys(input).forEach((key) => {
+    const name = allowed[String(key).toLowerCase()];
+    const value = String(input[key] == null ? '' : input[key]).trim();
+    if (!name || !value || value.length > 2048 || /[\r\n\0]/.test(value)) return;
+    out[name] = value;
+  });
+  return out;
+}
+
 const SVG_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.2v13.6L19 12 8 5.2Z"/></svg>';
 const SVG_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
 const SVG_VOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6.5 9H3v6h3.5L11 19V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -696,13 +710,13 @@ class Player {
     const url = item.url;
     this.setLiveState(item.kind === 'live', true);
 
-    const headers = item.headers || {};
+    const headers = normalizePlaybackHeaders(item.headers);
     const hasHeaders = Object.keys(headers).length > 0;
 
     if (/\.m3u8(\?|$)/i.test(url)) {
       this.startHls(url, headers, hasHeaders, token);
-    } else if (/\.(ts|flv)(\?|$)/i.test(url)) {
-      this.startMpegts(url, token);
+    } else if (/\.(ts|m2ts|flv)(\?|$)/i.test(url)) {
+      this.startMpegts(url, headers, token);
     } else if (/\.mpd(\?|$)/i.test(url)) {
       this.startDash(url, headers, hasHeaders, token);
     } else {
@@ -774,20 +788,26 @@ class Player {
     }
   }
 
-  startMpegts(url, token = this.loadToken) {
-    if (window.mpegts && window.mpegts.getFeatureList().mseLivePlayback) {
+  startMpegts(url, headers = {}, token = this.loadToken) {
+    let supported = false;
+    try {
+      supported = !!(window.mpegts && window.mpegts.isSupported && window.mpegts.isSupported() &&
+        window.mpegts.getFeatureList && window.mpegts.getFeatureList().mseLivePlayback);
+    } catch (_) { supported = false; }
+    if (supported) {
+      const type = /\.flv(\?|$)/i.test(url) ? 'flv' : /\.m2ts(\?|$)/i.test(url) ? 'm2ts' : 'mpegts';
       const player = window.mpegts.createPlayer(
-        { type: 'mpegts', isLive: this.isLive, url },
-        { enableWorker: true, lazyLoad: false, liveBufferLatencyChasing: true }
+        { type, isLive: this.isLive, url },
+        { enableWorker: true, lazyLoad: false, liveBufferLatencyChasing: true, headers: normalizePlaybackHeaders(headers) }
       );
       this.mpegts = player;
       const stale = () => this.loadToken !== token || this.mpegts !== player;
+      player.on(window.mpegts.Events.ERROR, () => { if (!stale()) this.showError('TS stream error'); });
       player.attachMediaElement(this.video);
       player.load();
-      player.on(window.mpegts.Events.ERROR, () => { if (!stale()) this.showError('TS stream error'); });
       if (!stale()) this.tryPlay();
-    } else {
-      if (this.loadToken === token) this.startNative(url);
+    } else if (this.loadToken === token) {
+      this.startNative(url);
     }
   }
 
@@ -798,14 +818,17 @@ class Player {
         const player = dashjs.MediaPlayer().create();
         this.dash = player;
         const stale = () => this.loadToken !== token || this.dash !== player;
-        if (hasHeaders && player.extend) {
-          const reqMod = (req) => {
-            req.headers = req.headers || {};
-            for (const k of Object.keys(headers || {})) req.headers[k] = headers[k];
-            return req;
-          };
-          try { player.extend('RequestModifier', () => ({ modifyRequestHeader: (xhr) => xhr, modifyRequestURL: (u) => u, modifyRequest: reqMod }), true); } catch (_) {}
-          try { player.on && dashjs.MediaPlayer && dashjs.MediaPlayer.events && player.on(dashjs.MediaPlayer.events.FRAGMENT_LOADING_STARTED, () => {}); } catch (_) {}
+        if (hasHeaders && typeof player.extend === 'function') {
+          const safeHeaders = normalizePlaybackHeaders(headers);
+          player.extend('RequestModifier', () => ({
+            modifyRequestHeader: (xhr) => {
+              Object.keys(safeHeaders).forEach((name) => {
+                try { xhr.setRequestHeader(name, safeHeaders[name]); } catch (_) {}
+              });
+              return xhr;
+            },
+            modifyRequestURL: (requestUrl) => requestUrl
+          }), true);
         }
         player.initialize(this.video, url, true);
         try {
@@ -2190,7 +2213,7 @@ class Player {
     const rows = [
       [window.t('title'), it.name || it.title || '—'],
       ['URL', it.url ? String(it.url).slice(0, 80) : '—'],
-      ['Engine', this.hls ? 'HLS' : this.mpegts ? 'MPEG-TS' : 'Native'],
+      ['Engine', this.hls ? 'HLS' : this.mpegts ? 'MPEG-TS' : this.dash ? 'MPEG-DASH' : 'Native'],
       [window.t('quality'), v.videoWidth ? v.videoWidth + '×' + v.videoHeight : '—'],
       ['Bitrate', level ? fmtBitrate(level.bitrate) : (this.hls ? fmtBitrate(this.hls.bandwidthEstimate) : '—')],
       [window.t('audio_delay'), (this.audioDelay||0) + ' ms'],
@@ -2261,7 +2284,7 @@ class Player {
       if (v.buffered && v.buffered.length) buffered = v.buffered.end(v.buffered.length - 1) - v.currentTime;
     } catch (_) {}
     const quality = v.videoWidth ? v.videoWidth + '×' + v.videoHeight : '—';
-    const engine = this.hls ? 'HLS (hls.js)' : this.mpegts ? 'MPEG-TS (mpegts.js)' : 'Native';
+    const engine = this.hls ? 'HLS (hls.js)' : this.mpegts ? 'MPEG-TS (mpegts.js)' : this.dash ? 'MPEG-DASH (dash.js)' : 'Native';
     const rows = [
       [window.t('status'), v.paused ? window.t('paused') : window.t('play')],
       ['Engine', engine],

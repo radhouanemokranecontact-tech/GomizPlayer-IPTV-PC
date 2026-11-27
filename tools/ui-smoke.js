@@ -3,7 +3,7 @@
 // Loads the real renderer in Chromium with a stubbed window.api and checks the PRO page + failover.
 const { chromium } = require('playwright');
 const path = require('path');
-const root = process.argv[2];
+const root = require('path').resolve(process.argv[2] || '.');
 (async () => {
   const browser = await chromium.launch(); const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const errors = []; page.on('pageerror', (e) => errors.push('pageerror: ' + e.message)); page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });

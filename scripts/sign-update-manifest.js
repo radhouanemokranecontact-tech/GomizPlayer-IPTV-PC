@@ -10,7 +10,6 @@
  * Cosmetic fields (releaseDate, releaseNotes) are intentionally excluded.
  */
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const yaml = require('js-yaml');
 

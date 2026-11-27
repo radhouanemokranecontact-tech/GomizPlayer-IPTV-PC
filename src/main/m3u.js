@@ -53,11 +53,15 @@ function isHlsPlaylist(text) {
   return /#EXT-X-/i.test(text.slice(0, 20000));
 }
 
+const ATTRIBUTE_RE = /([a-zA-Z0-9_-]+)=(?:"([^"]*)"|'([^']*)'|([^\s,]+))/g;
+
 function parseAttributes(line) {
   const out = {};
-  const re = /([a-zA-Z0-9_-]+)="([^"]*)"/g;
+  // Reuse the compiled expression: playlists may contain tens of thousands of
+  // EXTINF lines. Reset lastIndex because the expression is global.
+  ATTRIBUTE_RE.lastIndex = 0;
   let m;
-  while ((m = re.exec(line))) out[m[1].toLowerCase()] = m[2];
+  while ((m = ATTRIBUTE_RE.exec(line))) out[m[1].toLowerCase()] = m[2] !== undefined ? m[2] : (m[3] !== undefined ? m[3] : m[4]);
   return out;
 }
 
@@ -81,6 +85,9 @@ function parseM3U(text, opts = {}) {
     try {
       url = new URL(url, base || undefined).toString();
     } catch (_) { /* keep raw */ }
+    // Never let a playlist inject script/data URLs, and never let a *remote* playlist point <video> at local files.
+    if (/^\s*(?:javascript|vbscript|data|blob):/i.test(url)) return;
+    if (/^\s*file:/i.test(url) && /^https?:/i.test(String(base || ''))) return;
     const name = (pending && pending.name) || url;
     const group = (pending && pending.group) || pendingGroup || 'Uncategorized';
     const tvgId = (pending && pending.tvgId) || '';

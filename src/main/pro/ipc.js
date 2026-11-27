@@ -137,11 +137,12 @@ function register(deps) {
   ipcMain.handle('pro:parental:get', guard(() => ({ config: normalizeConfig((store.settings || {}).proParental), lockSet: lockSet() })));
   ipcMain.handle('pro:parental:set', guard(async (p) => {
     const cur = normalizeConfig((store.settings || {}).proParental);
-    if (cur.enabled && lockSet()) {
+    const next = normalizeConfig(p);
+    const pinRequired = cur.enabled || next.enabled;
+    if (pinRequired && lockSet()) {
       const v = await verifyAppLockPin(String(p.pin || ''));
       if (!v || !v.ok) return { ok: false, error: 'pin', locked: !!(v && v.locked) };
     }
-    const next = normalizeConfig(p);
     store.patchSettings({ proParental: next });
     applyFlagsToCaches();
     return { ok: true, config: next, lockSet: lockSet(), warning: (!lockSet() && next.enabled) ? 'no-pin' : '' };

@@ -4,10 +4,10 @@
 
 const STRINGS = {
   en: {
-  yes: 'Oui',
-  no: 'Non',
-  deleted: 'Supprimé',
-  recording_active: "Enregistrement en cours — arrêtez-le d'abord",
+  yes: 'Yes',
+  no: 'No',
+  deleted: 'Deleted',
+  recording_active: 'Recording in progress — stop it first',
     tagline: 'Your own player. Your own sources.',
     nav_home: 'Home',
     nav_live: 'Live TV',
@@ -143,7 +143,6 @@ const STRINGS = {
     bottom_offset: 'Bottom offset',
     bold: 'Bold',
     delay: 'Delay',
-    reset: 'Reset',
     subtitles: 'Subtitles',
     subtitles_settings: 'Subtitle style',
     choose_subtitle: 'Load a subtitle file',
@@ -218,7 +217,6 @@ const STRINGS = {
     left_hm: '{h}h {m}m left',
     left_h: '{h}h left',
     // player extra controls
-    stop: 'Stop',
     seek_back: 'Back {n}s',
     seek_forward: 'Forward {n}s',
     lock_controls: 'Lock controls',
@@ -354,7 +352,6 @@ const STRINGS = {
     compose_email: 'Compose email',
     compose_email_hint: 'Choose how to send an email:',
     default_mail_app: 'Default mail app',
-    open: 'Open',
     version: 'Version',
     legal: 'Legal',
     legal_text: 'GomizPlayer IPTV is a neutral media player. It ships with no channels, movies or streams. All content comes from sources you add yourself. You are responsible for making sure you have the right to access that content.',
@@ -522,7 +519,6 @@ const STRINGS = {
     bottom_offset: 'المسافة من الأسفل',
     bold: 'عريض',
     delay: 'التأخير',
-    reset: 'إعادة ضبط',
     subtitles: 'الترجمات',
     subtitles_settings: 'شكل الترجمة',
     choose_subtitle: 'تحميل ملف ترجمة',
@@ -597,7 +593,6 @@ const STRINGS = {
     left_hm: 'باقي {h} س {m} د',
     left_h: 'باقي {h} س',
     // player extra controls
-    stop: 'إيقاف',
     seek_back: 'ترجيع {n} ث',
     seek_forward: 'تقديم {n} ث',
     lock_controls: 'قفل عناصر التحكم',
@@ -734,7 +729,6 @@ const STRINGS = {
     compose_email: 'إرسال بريد',
     compose_email_hint: 'اختر طريقة إرسال البريد:',
     default_mail_app: 'تطبيق البريد الافتراضي',
-    open: 'فتح',
     version: 'الإصدار',
     legal: 'إشعار قانوني',
     legal_text: 'GomizPlayer IPTV مشغّل وسائط محايد. لا يأتي معه أي قنوات أو أفلام أو بث. كل المحتوى يأتي من مصادر تضيفها بنفسك، وأنت مسؤول عن امتلاك الحق في الوصول إليه.',

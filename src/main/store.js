@@ -47,6 +47,7 @@ const DEFAULTS = {
     appLockSalt: '',
     proHideDead: false,
     proAutoFailover: true,
+    proMultiview: { layout: '2x2', keys: [] },
     proParental: { enabled: false, keywords: [], lockedGroups: [], useDefaults: true },
     telemetryEnabled: false,
     analyticsEnabled: false,
@@ -339,7 +340,12 @@ class Store {
         };
         if (typeof s.passwordEnc === 'string' && s.passwordEnc) {
           src.passwordEnc = s.passwordEnc.slice(0, 4000);
-          if (s.passwordEncV != null && s.passwordEncV !== '') src.passwordEncV = Number(s.passwordEncV) || 2;
+          if (s.passwordEncV != null && s.passwordEncV !== '') {
+            const v = Number(s.passwordEncV);
+            src.passwordEncV = Number.isFinite(v) ? v : 2;
+          } else {
+            src.passwordEncV = 2;
+          }
         }
         return src;
       });

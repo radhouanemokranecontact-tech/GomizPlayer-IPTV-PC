@@ -5,54 +5,45 @@
 ## العربية
 
 ### الإصدار الحالي
-**PC: v1.0.38 (PRO)** · **Android: 1.0.4** — مستقر، موقّع، مع نسخ احتياطي وتحديثات تفاضلية موقّعة.
+**PC:** v2.0.0 (PRO) · **Android:** 1.0.4 — مستقر، موقّع، مع نسخ احتياطي وتحديثات تفاضلية موقّعة.
 
 ### مكتمل ✅
-- P0: توقيع APK (Keystore) · Network Security Config · نسخ بيانات احتياطي · توقيع manifest Ed25519
-- P1: 14 مجموعة اختبار (كلها في CI) + تحقق واقعي بـ CDP · تراجع آمن · تشخيص محلي
-- P2: إفصاح الخصوصية · ترجمات EN/AR · ثيمات (6) · توثيق ترخيص FFmpeg · قرار الحجم
-- PRO: فحص صحة القنوات · تحويل تلقائي · إزالة تكرار · جدولة تسجيل · رقابة أبوية · Catch-up · تصدير M3U — **مُدمج بالكامل في 1.0.38**
+- PRO 2.0: Multiview (حتى 6 قنوات، 4 تخطيطات، صوت من خانة واحدة، تحويل تلقائي للبديل، حفظ التشكيلة)
+- P0: توقيع APK (Keystore) · Network Security Config · نسخ بيانات احتياطي · توقيع manifest
+- P1: CI · ربط الاختبارات (7 suites) · تراجع آمن · تشخيص محلي
+- P2: إفصاح الخصوصية · ترجمات · توثيق ترخيص FFmpeg · قرار الحجم
 
-### قيد المتابعة (P0)
-- مراقبة وصول تحديث 1.0.38 إلى المستخدمين الحاليين وتأكيد تفعيل أدوات PRO لديهم.
+### أُنجز في 2.0 (PRO) ✅
+- طبيب القنوات · تحويل تلقائي للمصدر البديل · كشف التكرار · Catch-up · تسجيل مجدول · رقابة أبوية · تصدير M3U
 
-### مخطط له (P1)
-- تحسين زمن الإقلاع للمكتبات الكبيرة جداً (>15,000 قناة): فهرسة مسبقة + تأجيل إنشاء المشغّل. **القياس أظهر أن الفلترة ليست المشكلة الأساسية، بل نقل البيانات والشبكة.**
-- توسيع Catch-up لمزوّدين إضافيين عند الطلب.
-
-### مؤجّل (P2 — قرار واعٍ)
+### مؤجّل إلى 2.1+ (قرار واعٍ)
 | الميزة | السبب |
 |---|---|
-| Multiview | يحتاج أجهزة قوية واختبار فيزيائي |
+| Stalker | بروتوكول منفصل (portal + cookies) — مشروع مستقل |
 | Chromecast / DLNA | يتطلب أجهزة حقيقية للاختبار (لا emulator) |
 | قنوات beta + rollout تدريجي | يتطلب بنية نشر متعددة Releases |
 
 ### لا يُنفّذ (قرار تصميمي)
 - web installer لتقليل الحجم — يتعارض مع سياسة «المحتوى الموقّع فقط».
-- Stalker — بروتوكول منفصل (portal + cookies) — مشروع مستقل.
 
 ---
 
 ## English
 
 ### Current
-**PC: v1.0.38 (PRO)** · **Android: 1.0.4** — stable, signed, backed up, differential signed updates.
+**PC:** v2.0.0 (PRO) · **Android:** 1.0.4 — stable, signed, backed up, differential signed updates.
 
 ### Done ✅
-- P0: APK signing, Network Security Config, data backup, Ed25519 manifest signing
-- P1: 14 test suites (all in CI) + real-window CDP verification, safe rollback, local diagnostics
-- P2: privacy disclosure, EN/AR translations, 6 themes, FFmpeg license notice, size decision
-- PRO: health scan, auto-failover, dedupe, scheduled recording, parental controls, catch-up, M3U export — **fully merged in 1.0.38**
+- PRO 2.0: Multiview (up to 6 channels, 4 layouts, single audio tile, per-tile failover, remembered layout)
+- P0: APK signing, Network Security Config, data backup, signed update manifest
+- P1: CI, 7 test suites, safe rollback, local crash diagnostics
+- P2: privacy disclosure, translations, FFmpeg license notice, size decision
 
-### In progress (P0)
-- Monitor the 1.0.38 rollout and confirm PRO tools reach existing users.
+### Done in 2.0 (PRO) ✅
+Library Doctor, auto-failover, duplicate detection, catch-up (provider-dependent), scheduled recording, parental controls, M3U export.
 
-### Planned (P1)
-- Faster startup for very large libraries (>15,000 channels): pre-indexing + lazy player init. **Measurements show IPC transfer/network, not filtering, is the real bottleneck.**
-- Extend catch-up to more providers on request.
-
-### Deferred (P2, deliberate)
-Multiview (powerful devices only), Chromecast/DLNA (real hardware required), beta channels + staged rollout (multi-release publishing).
+### Deferred to 2.1+ (deliberate)
+Stalker (separate protocol), Chromecast/DLNA (real hardware needed), beta channels + staged rollout.
 
 ### Won't do
-Web installer (conflicts with signed-content-only policy); Stalker (separate protocol).
+Web installer — conflicts with the signed-content-only policy.
