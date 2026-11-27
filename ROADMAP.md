@@ -5,10 +5,12 @@
 ## العربية
 
 ### الإصدار الحالي
-**PC:** v2.0.0 (PRO) · **Android:** 1.0.4 — مستقر، موقّع، مع نسخ احتياطي وتحديثات تفاضلية موقّعة.
+**PC:** v2.0.1 (PRO) · **Android:** 1.0.4 — مستقر، مع نسخ احتياطي وتحديثات تفاضلية موقّعة.
+**آخر تحديث للخارطة:** 2026-11-27.
 
 ### مكتمل ✅
 - PRO 2.0: Multiview (حتى 6 قنوات، 4 تخطيطات، صوت من خانة واحدة، تحويل تلقائي للبديل، حفظ التشكيلة)
+- تشغيل MPEG-DASH عبر dash.js محلياً للمصادر MPD المتوافقة (دون ادعاء دعم DRM؛ الاختبار مع مزود حقيقي ما زال مطلوباً)
 - P0: توقيع APK (Keystore) · Network Security Config · نسخ بيانات احتياطي · توقيع manifest
 - P1: CI · ربط الاختبارات (7 suites) · تراجع آمن · تشخيص محلي
 - P2: إفصاح الخصوصية · ترجمات · توثيق ترخيص FFmpeg · قرار الحجم
@@ -31,10 +33,12 @@
 ## English
 
 ### Current
-**PC:** v2.0.0 (PRO) · **Android:** 1.0.4 — stable, signed, backed up, differential signed updates.
+**PC:** v2.0.1 (PRO) · **Android:** 1.0.4 — stable, backed up, differential signed updates.
+**Roadmap updated:** 2026-11-27.
 
 ### Done ✅
 - PRO 2.0: Multiview (up to 6 channels, 4 layouts, single audio tile, per-tile failover, remembered layout)
+- MPEG-DASH playback through locally bundled dash.js for compatible MPD streams (no DRM claim; real provider validation remains)
 - P0: APK signing, Network Security Config, data backup, signed update manifest
 - P1: CI, 7 test suites, safe rollback, local crash diagnostics
 - P2: privacy disclosure, translations, FFmpeg license notice, size decision
