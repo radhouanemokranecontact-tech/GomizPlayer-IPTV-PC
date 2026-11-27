@@ -420,6 +420,7 @@
 - يحتوي `app.asar` على `src/renderer/vendor/dash.all.min.js` وملف ترخيص dash.js.
 - نجحت فحوصات `test:manifest-signature` و`test:update-guard` و`test:net-guard` و`test:hardening` و`test:secrets:audit` و`test:secrets` و`test:pro-ipc` و`test:player-engine` و`test:pro`.
 - نجح اختبار Electron الفعلي لتشفير/فك تشفير safeStorage، ورفض كلمة المرور الخاطئة، وعدم إرسال كلمة مرور فارغة عند فشل فك التشفير.
+- لم يعمل `test:ui` لأن Playwright غير مثبت في بيئة العمل؛ أضيف فحص الواجهة لحقل PIN إلى `tools/ui-smoke.js` ليعمل عند توفر Playwright.
 
 ### قيود النشر والتحقق
 - ملف `dist/v2.0.1/latest.yml` الناتج محلياً **غير موقّع** (`not-signed`). يجب أن يوقّعه سير CI بمفتاح Ed25519 السري قبل إرفاقه بإصدار GitHub؛ لم يتم نشر تحديث بهذا البيان.
