@@ -34,7 +34,6 @@
     "test:multiview-overlay": "node tools/test-multiview-failed-overlay.js"
   },
   "dependencies": {
-    "dashjs": "5.3.0",
     "electron-updater": "6.8.11",
     "ffmpeg-static": "^5.3.0",
     "hls.js": "^1.5.20",
@@ -42,6 +41,7 @@
     "mpegts.js": "^1.7.3"
   },
   "devDependencies": {
+    "dashjs": "5.3.0",
     "electron": "45.3.2",
     "electron-builder": "26.18.0"
   },
