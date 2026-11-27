@@ -21,7 +21,7 @@
 Everything runs locally. Your data folder is unchanged, so upgrading from 1.x keeps sources, favourites and settings.
 
 
-> **Release-integrity note (2.0.1):** `RELEASE_MANIFEST.yml` in this source archive is a previously signed 1.0.33 manifest and points to the 1.0.33 installer. It is intentionally preserved byte-for-byte because changing signed fields invalidates its Ed25519 signature. The app verifies the signed `latest.yml` attached to the newest published GitHub release; the release workflow generates that manifest from the actual Windows artifacts and requires Authenticode-signed installers.
+> **Release-integrity note (2.0.1):** `RELEASE_MANIFEST.yml` in this source archive is a previously signed 1.0.33 manifest and points to the 1.0.33 installer. It is intentionally preserved byte-for-byte because changing signed fields invalidates its Ed25519 signature. The app verifies the Ed25519-signed `latest.yml` attached to the newest published GitHub release and checks that its signed hashes match the update artifacts. Windows installer files are not Authenticode-signed; Windows may show an unknown-publisher warning when they are downloaded or run.
 
 ## English
 
@@ -36,7 +36,7 @@ Gomiz Player IPTV Desktop is the Windows companion application for the Android T
 > **Note:** This repository contains the desktop/Windows application only. The Android TV application lives in the separate `GomizPlayer-IPTV-APK` repository.
 
 ### About the installer size (~144 MB)
-The installer bundles the full Electron/Chromium runtime so the app runs **offline, standalone, with no external dependencies**. The application code itself is small (~1.4 MB of JS); the rest is Chromium. Updates are **differential** (`.blockmap`) so repeated updates download only the changed blocks, and every manifest is **Ed25519-signed** and verified before download. A web-installer was intentionally not used because it would require downloading unsigned payloads at install time.
+The installer bundles the full Electron/Chromium runtime so the app runs **offline, standalone, with no external dependencies**. The application code itself is small (~1.4 MB of JS); the rest is Chromium. Updates are **differential** (`.blockmap`) so repeated updates download only the changed blocks. The app verifies the Ed25519-signed update manifest and its artifact hashes before downloading. Windows installer files are not Authenticode-signed, so Windows may show an unknown-publisher warning.
 
 ### Run
 ```bash
@@ -72,7 +72,7 @@ npm start
 > **ملاحظة:** يحتوي هذا المستودع على تطبيق سطح المكتب (Windows) فقط. تطبيق Android TV موجود في مستودع منفصل باسم `GomizPlayer-IPTV-APK`.
 
 ### حول حجم المُثبّت (~144 ميجابايت)
-يضمّ المُثبّت تشغيل Electron/Chromium كاملاً ليعمل التطبيق **دون اتصال وبلا تبعيات خارجية**. كود التطبيق نفسه صغير (~1.4 ميجابايت) والباقي هو Chromium. التحديثات **تفاضلية** (`.blockmap`) فتنزّل الكتل المغيّرة فقط، وكل manifest **موقّع Ed25519** ويُتحقَّق منه قبل التنزيل. لم نستخدم web installer عن قصد لأنه يتطلب تنزيل حمولة غير موقّعة وقت التثبيت.
+يضمّ المُثبّت تشغيل Electron/Chromium كاملاً ليعمل التطبيق **دون اتصال وبلا تبعيات خارجية**. كود التطبيق نفسه صغير (~1.4 ميجابايت) والباقي هو Chromium. التحديثات **تفاضلية** (`.blockmap`) فتنزّل الكتل المغيّرة فقط. يتحقق التطبيق من توقيع Ed25519 لبيان التحديث ومن تطابق بصمات الملفات قبل التنزيل. ملفات تثبيت Windows غير موقّعة بـ Authenticode، لذلك قد يعرض Windows تحذير «ناشر غير معروف» عند التنزيل أو التشغيل.
 
 ### التشغيل
 ```bash
@@ -83,3 +83,4 @@ npm start
 ## Engineering audit status (2026-11-27)
 
 The source repair package includes a second-stage Player/Multiview patch and a focused regression suite (`npm run test:player-engine`). MPEG-TS request headers are now filtered and passed to mpegts.js; M2TS is recognized; Multiview capability checks are exception-safe; and diagnostics identify DASH separately when a DASH engine is present. MPEG-DASH is **not yet bundled**: dash.js is absent from the current dependencies and renderer HTML, so DASH playback must not be advertised as fully supported until the library is integrated and tested.
+
