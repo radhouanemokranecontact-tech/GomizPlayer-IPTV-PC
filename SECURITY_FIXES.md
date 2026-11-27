@@ -1,5 +1,7 @@
 # Security & robustness fixes (applied on top of 1.0.35)
 
+> Historical fix log. Current source status (2026-11-27): parental filtering cannot be enabled without an app-lock PIN; the old signed 1.0.33 manifest is archived under `docs/archive/`; release signing targets the generated `dist/latest.yml`. Parental filtering remains a local convenience feature, not an OS security boundary.
+
 | # | Fix | Files |
 |---|-----|-------|
 | 1 | Signed manifest is now **bound** to the update electron-updater downloads (version, filename, sha512, size), must be strictly newer (anti-rollback), supports signed `validUntil` expiry | `manifest-verify.js`, `main.js`, `scripts/sign-update-manifest.js` |
@@ -15,8 +17,9 @@
 
 New tests: `test:net-guard`, `test:hardening`, extended `test:manifest-signature` (all in CI).
 
-## Still requires you (cannot be done in code)
-- Re-sign `RELEASE_MANIFEST.yml` for each release with your private key. **Include the real `latest.yml` hashes** and consider `node scripts/sign-update-manifest.js RELEASE_MANIFEST.yml key.pem 90`.
+## Release signing
+- The historical signed 1.0.33 manifest is archived in `docs/archive/` and is not a release input.
+- Sign the generated `dist/latest.yml` for each release with the private release key, then verify it with `npm run verify:release-manifest -- dist/latest.yml`. The release workflow already performs this step and requires the matching private key secret.
 - Buy an Authenticode certificate, then set `verifyUpdateCodeSignature: true`.
 
 ## PRO additions that touch security

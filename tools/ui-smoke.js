@@ -36,7 +36,7 @@ const root = require('path').resolve(process.argv[2] || '.');
         alternatives: async (it) => { window.__calls.push(['alt', [it.key]]); return { items: it.key === 'a' ? [{ key: 'b', name: 'TF1 FHD', url: 'http://127.0.0.1:9/b.m3u8', kind: 'live', headers: {} }] : [] }; },
         catchupUrl: rec('catchup', { ok: true, url: 'http://h/timeshift/u/p/30/2026-01-01:10-00/1.ts', headers: {} }),
         sched: { list: async () => ({ items: sched }), add: async (e) => { sched.push({ ...e, id: 'z' + sched.length, state: 'scheduled' }); window.__calls.push(['sched.add', [e]]); return { ok: true }; }, remove: async (id) => { sched.splice(0, sched.length); return { ok: true }; } },
-        parental: { get: async () => ({ config: { enabled: false, keywords: ['foo'], lockedGroups: [], useDefaults: true }, lockSet: false }), set: rec('parental.set', { ok: true, warning: 'no-pin' }) },
+        parental: { get: async () => ({ config: { enabled: false, keywords: ['foo'], lockedGroups: [], useDefaults: true }, lockSet: true }), set: rec('parental.set', { ok: true }) },
         exportM3U: rec('export', { ok: true, count: 2 })
       }
     };
@@ -63,6 +63,8 @@ const root = require('path').resolve(process.argv[2] || '.');
   checks['schedule listed'] = await page.evaluate(() => /Scheduled\s+\(?/.test(document.body.innerText) && document.body.innerText.includes('→'));
   await page.click('text=Export without duplicates'); await page.waitForTimeout(100);
   checks['export called'] = await page.evaluate(() => window.__calls.some((c) => c[0] === 'export' && c[1][0].dedupe === true));
+  await page.locator('.pro-card').filter({ hasText: 'Parental controls' }).locator('.switch').first().click();
+  checks['PIN appears when enabling parental controls'] = await page.isVisible('.pro-card input[type="password"]');
   await page.click('text=Save >> nth=0'); await page.waitForTimeout(200);
   checks['parental save called'] = await page.evaluate(() => window.__calls.some((c) => c[0] === 'parental.set' && c[1][0].keywords[0] === 'foo'));
   checks['no xss executed'] = await page.evaluate(() => !window.__xss);

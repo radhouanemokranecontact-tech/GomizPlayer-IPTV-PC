@@ -19,7 +19,7 @@
     "verify:release-manifest": "node tools/verify-release-manifest.js",
     "test:epg-stream": "node tools/test-epg-stream.js",
     "test:classification-parity": "node tools/test-classification-parity.js",
-    "sign:manifest": "node scripts/sign-update-manifest.js RELEASE_MANIFEST.yml",
+    "sign:manifest": "node scripts/sign-update-manifest.js dist/latest.yml",
     "pack": "electron-builder --dir",
     "dist": "electron-builder --win",
     "postdist": "node scripts/organize-dist.js",
@@ -41,6 +41,7 @@
     "mpegts.js": "^1.7.3"
   },
   "devDependencies": {
+    "dashjs": "5.3.0",
     "electron": "45.3.2",
     "electron-builder": "26.18.0"
   },
@@ -100,4 +101,3 @@
     "electron@45.3.2": true
   }
 }
-

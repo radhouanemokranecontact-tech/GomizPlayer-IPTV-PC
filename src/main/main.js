@@ -2179,7 +2179,9 @@ async function startRecordingCore(payload, opts = {}) {
   recordingLastError = null;
   let stderr = '';
   if (proc.stderr) {
-    proc.stderr.on('data', (d) => { stderr += d.toString(); });
+    // ffmpeg is long-running and can emit unbounded progress/log output.
+    // Keep only a small tail for an eventual error message.
+    proc.stderr.on('data', (d) => { stderr = (stderr + d.toString()).slice(-8192); });
   }
   // Wait briefly to detect immediate failures (bad URL, 404, etc.).
   const earlyExit = await new Promise((resolve) => {

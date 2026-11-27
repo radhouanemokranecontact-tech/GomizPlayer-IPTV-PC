@@ -15,13 +15,14 @@
 | **Duplicate detection** | Finds the same channel across sources (tvg-id, normalised name, quality tags) and exports a clean playlist |
 | **Catch-up** | Reads `catchup*` M3U attributes and Xtream timeshift; past programmes in the TV Guide are playable |
 | **Scheduled recordings** | Record a channel at a chosen time (persisted, survives restarts, conflict + early-stop detection) |
-| **Parental controls** | Hide adult keywords / categories; changes require the app-lock PIN |
+| **Parental controls** | Hide adult keywords / categories; enabling requires an app-lock PIN |
+| **MPEG-DASH** | Local bundled dash.js playback for compatible MPD streams |
 | **Export** | Clean M3U (de-duplicated and/or verified-working only) |
 
 Everything runs locally. Your data folder is unchanged, so upgrading from 1.x keeps sources, favourites and settings.
 
 
-> **Release-integrity note (2.0.1):** `RELEASE_MANIFEST.yml` in this source archive is a previously signed 1.0.33 manifest and points to the 1.0.33 installer. It is intentionally preserved byte-for-byte because changing signed fields invalidates its Ed25519 signature. The app verifies the Ed25519-signed `latest.yml` attached to the newest published GitHub release and checks that its signed hashes match the update artifacts. Windows installer files are not Authenticode-signed; Windows may show an unknown-publisher warning when they are downloaded or run.
+> **Release integrity:** `docs/archive/RELEASE_MANIFEST-1.0.33.yml` is a historical signed manifest, not the current release manifest. Release builds must generate `latest.yml` from their actual artifacts and sign it with the private Ed25519 release key. The app verifies the signed manifest and artifact hashes before download. Windows installer files are not Authenticode-signed; Windows may show an unknown-publisher warning.
 
 ## English
 
@@ -55,6 +56,7 @@ npm start
 - **مشاهدة ما فات (Catch-up):** يدعم سمات `catchup` وXtream timeshift، والبرامج السابقة قابلة للتشغيل من الدليل.
 - **التسجيل المجدول:** سجّل قناة في وقت محدد (يبقى بعد إعادة التشغيل).
 - **رقابة أبوية:** إخفاء كلمات/تصنيفات؛ التغيير يتطلب PIN قفل التطبيق.
+- **MPEG-DASH:** تشغيل محلي عبر dash.js لمصادر MPD المتوافقة؛ دعم DRM غير معلن.
 - **تصدير M3U** نظيف (بدون تكرار و/أو القنوات العاملة فقط).
 
 بياناتك لا تتغير عند الترقية من 1.x.
@@ -82,5 +84,6 @@ npm start
 
 ## Engineering audit status (2026-11-27)
 
-The source repair package includes a second-stage Player/Multiview patch and a focused regression suite (`npm run test:player-engine`). MPEG-TS request headers are now filtered and passed to mpegts.js; M2TS is recognized; Multiview capability checks are exception-safe; and diagnostics identify DASH separately when a DASH engine is present. MPEG-DASH is **not yet bundled**: dash.js is absent from the current dependencies and renderer HTML, so DASH playback must not be advertised as fully supported until the library is integrated and tested.
+The current source bundles dash.js locally alongside hls.js and mpegts.js. MPEG-DASH playback depends on stream codecs, server behavior, and CORS; DRM support is not claimed. Parental controls are a convenience filter that requires an app-lock PIN; they do not protect against someone who can edit the user's local application data.
 
+تاريخ تحديث الملاحظات الهندسية: 2026-11-27. تتطلب الرقابة الأبوية PIN لقفل التطبيق؛ وهي مرشح محلي وليست حماية من تعديل ملفات بيانات المستخدم. بيان 1.0.33 التاريخي موجود في `docs/archive/`، وتُوقّع بيانات كل إصدار من `dist/latest.yml` بمفتاح الإصدار.

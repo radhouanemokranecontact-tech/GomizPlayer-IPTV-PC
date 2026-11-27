@@ -59,9 +59,13 @@ let failed = 0; const t = (n, c, x) => { console.log((c ? 'PASS ' : 'FAIL ') + n
 
   // parental + PIN
   let r = await call('pro:parental:set', { enabled: true, keywords: ['tf1'] });
-  t('parental enable without PIN set warns', r.ok && r.warning === 'no-pin');
+  t('parental enable without app-lock PIN is rejected', !r.ok && r.error === 'lock-required');
+  t('rejected parental enable leaves filters unchanged', !settings.proParental.enabled && caches['source-s1'].items.find((x) => x.key === 'a').hidden === false);
+  settings.appLockHash = 'x'; pinOk = true;
+  r = await call('pro:parental:set', { enabled: true, keywords: ['tf1'], pin: '1234' });
+  t('parental enable with app-lock PIN succeeds', r.ok && settings.proParental.enabled);
   t('parental hides adult + keyword items', caches['source-s1'].items.find((x) => x.key === 'c').hidden === true && caches['source-s1'].items.find((x) => x.key === 'a').hidden === true);
-  settings.appLockHash = 'x'; pinOk = false;
+  pinOk = false;
   r = await call('pro:parental:set', { enabled: false, pin: 'bad' }); t('disabling needs correct PIN', r.ok === false && r.error === 'pin' && settings.proParental.enabled === true);
   pinOk = true; r = await call('pro:parental:set', { enabled: false, pin: '1234' });
   t('correct PIN disables and restores', r.ok && caches['source-s1'].items.find((x) => x.key === 'c').hidden === false && caches['source-s1'].items.find((x) => x.key === 'd').hidden === true);

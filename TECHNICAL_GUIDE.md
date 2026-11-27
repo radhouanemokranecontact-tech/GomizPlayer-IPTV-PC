@@ -2,12 +2,13 @@
 
 [English](#english) | [العربية](#العربية)
 
-> مبني على فحص الكود الفعلي للنسخة **1.0.35** — ما هو مكتوب مُنجز ومُختبَر، وما ليس مذكوراً غير موجود.
+> يصف هذا الدليل الشيفرة الحالية في `package.json` (الإصدار **2.0.1**). الاختبارات أو الميزات غير المثبتة موضحة كقيود.
+> آخر تحديث: **2026-11-27**.
 
 ## العربية
 
 ### 1) ما هو هذا التطبيق؟
-تطبيق سطح مكتب Windows مبني بـ **Electron** + JavaScript، يعمل كمرافق لتطبيق الأندرويد. يوفّر تشغيل IPTV/VOD وإدارة المصادر على الكمبيوتر، بواجهة عربية/إنجليزية (EN/AR فقط — FR أُزيل لأنه غير مكتمل). الإصدار الحالي في `package.json`: **2.0.0**.
+تطبيق سطح مكتب Windows مبني بـ **Electron** + JavaScript، يعمل كمرافق لتطبيق الأندرويد. يوفّر تشغيل IPTV/VOD وإدارة المصادر على الكمبيوتر، بواجهة عربية/إنجليزية (EN/AR فقط — FR أُزيل لأنه غير مكتمل). الإصدار الحالي في `package.json`: **2.0.1**.
 
 ### 2) ماذا يفعل بالضبط؟ (من تجربة الاستخدام)
 
@@ -22,7 +23,7 @@
 - أقسام قابلة للترتيب: بطل، أكمل المشاهدة، المفضلة، مباشر, أُضيف حديثاً، مجموعات — مع كثافة (compact/comfortable/large) وعدد عناصر قابل للضبط.
 
 **المشغّل (Player):**
-- تشغيل HLS (hls.js) وMPEG-TS (mpegts.js) وDASH، مع لوحة تحكم كاملة: play/pause، seek،全面提升 سرعة، جودة، صوت، ترجمة، نسبة أبعاد، ملء شاشة، كتم، لقطة شاشة، مؤقت نوم، A-B loop، mini-player، دائماً في المقدمة، إحصاءات.
+- تشغيل HLS (hls.js) وMPEG-TS (mpegts.js) وMPEG-DASH (dash.js) وملفات الوسائط المدعومة أصلياً، مع لوحة تحكم كاملة: play/pause، seek، سرعة، جودة، صوت، ترجمة، نسبة أبعاد، ملء شاشة، كتم، لقطة شاشة، مؤقت نوم، A-B loop، mini-player، دائماً في المقدمة، إحصاءات.
 - **درج القنوات** بمجموعات/بحث/مفضلة♥ + NOW/NEXT.
 - عند فشل بث: نافذة error مع Retry / القناة التالية / **Close → يرجع لقائمة القنوات** (لا للرئيسية).
 
@@ -40,9 +41,9 @@
 
 | العنصر | الحقيقة في الكود |
 |---|---|
-| الإصدار | 2.0.0 |
+| الإصدار | 2.0.1 |
 | إطار العمل | Electron + JS · `electron-builder` 26 · `electron-updater` 6.8.11 |
-| محرك الفيديو | hls.js + mpegts.js + DASH داخل الرندرر |
+| محرك الفيديو | hls.js + mpegts.js + dash.js (MPEG-DASH) داخل الرندرر |
 | التخزين | `gomizplayer.json` في `userData` + نسخ في `userData/backups` (3 دوّارة) |
 | الأسرار | `safeStorage` + تشفير في `secrets.js` |
 | IPC | **67 handler** (مصادر، مكتبة، تنزيلات، تسجيل، EPG، ملفات，إعدادات，نوافذ，تحديث，نسخ，تشخيص) |
@@ -56,7 +57,7 @@
 ### 4) حدود معروفة (صدقاً)
 - لا Stalker / Chromecast/DLNA (مؤجّلة — `ROADMAP.md`).
 - لا قنوات beta ولا rollout تدريجي.
-- **DASH (.mpd) مدعوم جزئياً فقط** — الرابط يُكتشف لكن التشغيل الكامل غير مضمون؛ لا يوجد دعم DRM فعلي (Widevine/PlayReady/FairPlay) على PC. يُنصح بـ HLS أو MP4 للبث الموثوق.
+- **DASH (.mpd):** محرك dash.js مضمّن محلياً ويشغّل محتوى MPEG-DASH المتوافق مع MSE؛ نجاح التشغيل يعتمد على الترميز والخادم وCORS. DRM ليس مضموناً لهذا التطبيق، ولا يُعلن دعم Widevine/PlayReady/FairPlay.
 - المُثبّت 144MB مقصود (تشغيل مستقل بالكامل، بلا web installer — انظر README).
 - التوقيع التجاري (Authenticode) يحتاج شهادة مدفوعة — لم يُنفّذ.
 
@@ -64,11 +65,11 @@
 
 ## English
 
-Gomiz Player IPTV Desktop is a **Windows Electron** companion app (v2.0.0) for managing and playing IPTV/VOD, with full EN/AR UI (RTL). FR was removed because it was incomplete.
+Gomiz Player IPTV Desktop is a **Windows Electron** companion app (v2.0.1) for managing and playing IPTV/VOD, with full EN/AR UI (RTL). FR was removed because it was incomplete.
 
 **What it actually does:** Home with three independent widgets — a live analog clock, realistic SVG weather, and prayer times — all with dynamic backgrounds following time/weather/prayer proximity and a per-card refresh button. A player with a full control chrome and a channel drawer (categories, search, favorites, NOW/NEXT); a stream-error dialog whose Close returns to the channel list. EPG guide, movies/series, favorites, profiles, downloads and HLS recordings with local MP4 remux. M3U/Xtream/single sources with encrypted credentials. 10+ settings tabs, backup/restore, signed differential updates with a startup update popup, safe rollback, and local diagnostics.
 
-**Under the hood:** 67 IPC handlers · `gomizplayer.json` + rolling backups · Electron `safeStorage` · 482 matched EN/AR keys · strict CSP + trusted-sender checks · Ed25519-signed update manifest verified before download · 7 passing test suites in CI · signed local manifest (`RELEASE_MANIFEST.yml`).
+**Under the hood:** 67 IPC handlers · `gomizplayer.json` + rolling backups · Electron `safeStorage` · 482 matched EN/AR keys · strict CSP + trusted-sender checks · Ed25519-signed update manifest verified before download · CI checks · archived historical manifest kept in `docs/archive/`.
 
 **Known limits:** no Stalker/Cast (Multiview and provider-dependent Catch-up are available in PRO), no beta channels, 144MB installer (deliberate), no Authenticode signing yet. See ROADMAP.md.
 
