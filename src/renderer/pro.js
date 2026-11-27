@@ -185,12 +185,17 @@ function render(view, c) {
     const kw = el('textarea', 'textarea'); kw.rows = 2; kw.value = cfg.keywords.join(', ');
     const gr = el('textarea', 'textarea'); gr.rows = 2; gr.value = cfg.lockedGroups.join(', ');
     const pin = input('password', tr('pin')); pin.autocomplete = 'off'; pin.style.maxWidth = '160px';
-    pbox.appendChild(toggleRow(tr('enabled'), '', enabled, (on) => { enabled = on; }));
+    const pinField = el('div', 'field'); pinField.appendChild(pin);
+    pinField.hidden = !r.lockSet || !cfg.enabled;
+    pbox.appendChild(toggleRow(tr('enabled'), '', enabled, (on) => {
+      enabled = on;
+      if (r.lockSet) pinField.hidden = !(cfg.enabled || on);
+    }));
     pbox.appendChild(toggleRow(tr('use_defaults'), '', useDef, (on) => { useDef = on; }));
     const f1 = el('div', 'field'); f1.appendChild(el('label', null, tr('keywords'))); f1.appendChild(kw); pbox.appendChild(f1);
     const f2 = el('div', 'field'); f2.appendChild(el('label', null, tr('locked_groups'))); f2.appendChild(gr); pbox.appendChild(f2);
     const rr = row();
-    if (r.lockSet && (cfg.enabled || enabled)) rr.appendChild(pin);
+    if (r.lockSet) rr.appendChild(pinField);
     rr.appendChild(makeButton(tr('save'), { cls: 'btn btn-primary', onClick: async () => {
       const res = await api.parental.set({ enabled, useDefaults: useDef, keywords: csv(kw.value), lockedGroups: csv(gr.value), pin: pin.value });
       pin.value = '';
