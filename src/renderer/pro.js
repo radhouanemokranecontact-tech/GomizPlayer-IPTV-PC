@@ -19,10 +19,11 @@ const STR = {
     no_sched: 'Nothing scheduled', channel: 'Channel', search_channel: 'Search channel…', start_time: 'Start', minutes: 'Duration (min)',
     add_sched: 'Schedule', remove: 'Remove', st_scheduled: 'Scheduled', st_recording: 'Recording', st_done: 'Done', st_failed: 'Failed', st_missed: 'Missed',
     pick_channel: 'Pick a channel first', bad_time: 'Choose a start time in the future', scheduled_ok: 'Recording scheduled',
-    parental: 'Parental controls', parental_hint: 'Hide adult and unwanted content. Changing these settings requires your app-lock PIN.',
+    parental: 'Parental controls', parental_hint: 'Hide adult and unwanted content. Set an app-lock PIN before enabling this filter.',
     enabled: 'Enabled', keywords: 'Hidden keywords (comma separated)', locked_groups: 'Hidden categories (comma separated)',
     use_defaults: 'Use built-in adult keywords', pin: 'PIN', save: 'Save', saved: 'Saved', wrong_pin: 'Wrong PIN',
     no_pin_warn: 'Tip: set an app-lock PIN in Settings so nobody can switch this off.',
+    parental_lock_required: 'Set an app-lock PIN in Settings before enabling parental controls.',
     export: 'Export playlist', export_hint: 'Create a clean M3U from your library. Note: the file may contain your provider login inside the URLs — keep it private.',
     export_dedupe: 'Export without duplicates', export_alive: 'Export verified-working only', exported: 'Exported', export_empty: 'Nothing to export',
     catchup: 'Catch-up', catchup_title: 'Catch-up — past programmes', catchup_none: 'No past programmes available for this channel', catchup_na: 'This channel does not advertise catch-up',
@@ -43,10 +44,11 @@ const STR = {
     no_sched: 'لا شيء مجدول', channel: 'القناة', search_channel: 'ابحث عن قناة…', start_time: 'البداية', minutes: 'المدة (دقيقة)',
     add_sched: 'جدولة', remove: 'حذف', st_scheduled: 'مجدول', st_recording: 'يسجّل', st_done: 'تم', st_failed: 'فشل', st_missed: 'فات',
     pick_channel: 'اختر قناة أولاً', bad_time: 'اختر وقت بداية في المستقبل', scheduled_ok: 'تمت جدولة التسجيل',
-    parental: 'الرقابة الأبوية', parental_hint: 'أخفِ المحتوى للكبار وغير المرغوب. تغيير هذه الإعدادات يتطلب رمز PIN قفل التطبيق.',
+    parental: 'الرقابة الأبوية', parental_hint: 'أخفِ المحتوى للكبار وغير المرغوب. عيّن PIN لقفل التطبيق قبل تفعيل هذا المرشح.',
     enabled: 'مفعّلة', keywords: 'كلمات مخفية (مفصولة بفاصلة)', locked_groups: 'تصنيفات مخفية (مفصولة بفاصلة)',
     use_defaults: 'استخدام كلمات المحتوى للكبار المدمجة', pin: 'رمز PIN', save: 'حفظ', saved: 'تم الحفظ', wrong_pin: 'رمز PIN خاطئ',
     no_pin_warn: 'نصيحة: عيّن رمز PIN لقفل التطبيق من الإعدادات حتى لا يستطيع أحد إيقاف هذه الميزة.',
+    parental_lock_required: 'عيّن رمز PIN لقفل التطبيق من الإعدادات قبل تفعيل الرقابة الأبوية.',
     export: 'تصدير قائمة التشغيل', export_hint: 'أنشئ ملف M3U نظيفاً من مكتبتك. تنبيه: قد يحتوي الملف على بيانات دخول المزوّد داخل الروابط — احتفظ به بخصوصية.',
     export_dedupe: 'تصدير بدون تكرار', export_alive: 'تصدير القنوات التي تعمل فقط', exported: 'تم التصدير', export_empty: 'لا يوجد ما يُصدَّر',
     catchup: 'مشاهدة ما فات', catchup_title: 'مشاهدة ما فات — برامج سابقة', catchup_none: 'لا توجد برامج سابقة لهذه القناة', catchup_na: 'هذه القناة لا تدعم مشاهدة ما فات',
@@ -188,13 +190,12 @@ function render(view, c) {
     const f1 = el('div', 'field'); f1.appendChild(el('label', null, tr('keywords'))); f1.appendChild(kw); pbox.appendChild(f1);
     const f2 = el('div', 'field'); f2.appendChild(el('label', null, tr('locked_groups'))); f2.appendChild(gr); pbox.appendChild(f2);
     const rr = row();
-    if (r.lockSet && cfg.enabled) rr.appendChild(pin);
+    if (r.lockSet && (cfg.enabled || enabled)) rr.appendChild(pin);
     rr.appendChild(makeButton(tr('save'), { cls: 'btn btn-primary', onClick: async () => {
       const res = await api.parental.set({ enabled, useDefaults: useDef, keywords: csv(kw.value), lockedGroups: csv(gr.value), pin: pin.value });
       pin.value = '';
-      if (!res || !res.ok) return toast(res && res.error === 'pin' ? tr('wrong_pin') : tr('error'), 'err');
+      if (!res || !res.ok) return toast(res && res.error === 'pin' ? tr('wrong_pin') : res && res.error === 'lock-required' ? tr('parental_lock_required') : tr('error'), 'err');
       toast(tr('saved'), 'ok'); if (c.reloadLibrary) await c.reloadLibrary();
-      if (res.warning === 'no-pin') toast(tr('no_pin_warn'));
       if (alive()) { pbox.innerHTML = ''; c.render(); }
     } }));
     pbox.appendChild(rr);
