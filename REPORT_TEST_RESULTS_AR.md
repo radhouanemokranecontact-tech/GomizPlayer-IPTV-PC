@@ -416,7 +416,7 @@
 ## 10. متابعة الإصدار 2.0.1 (2026-11-27)
 
 ### ما تم التحقق منه محلياً
-- تم بناء NSIS وPortable بنجاح في `dist/v2.0.1/`؛ حجم Setup هو 151,257,815 بايت وحجم Portable هو 134,933,250 بايت.
+- تم بناء NSIS وPortable بنجاح في `dist/v2.0.1/`؛ حجم Setup هو 151,060,767 بايت وحجم Portable هو 134,936,387 بايت.
 - يحتوي `app.asar` على `src/renderer/vendor/dash.all.min.js` وملف ترخيص dash.js.
 - نجحت فحوصات `test:manifest-signature` و`test:update-guard` و`test:net-guard` و`test:hardening` و`test:secrets:audit` و`test:secrets` و`test:pro-ipc` و`test:player-engine` و`test:pro`.
 - نجح اختبار Electron الفعلي لتشفير/فك تشفير safeStorage، ورفض كلمة المرور الخاطئة، وعدم إرسال كلمة مرور فارغة عند فشل فك التشفير.
@@ -425,3 +425,22 @@
 ### قيود النشر والتحقق
 - ملف `dist/v2.0.1/latest.yml` الناتج محلياً **غير موقّع** (`not-signed`). يجب أن يوقّعه سير CI بمفتاح Ed25519 السري قبل إرفاقه بإصدار GitHub؛ لم يتم نشر تحديث بهذا البيان.
 - لم يُختبر تشغيل بث MPD/M4S حقيقي أو DRM، وملفات Windows لا تحمل توقيع Authenticode.
+
+## تحقق شامل وإصلاح تبعيات البناء (2026-11-27)
+
+### الاختبارات
+- نجحت: test:ssrf، test:classification، test:secrets:audit، test:update-guard، test:manifest-signature، test:epg-stream، test:classification-parity، test:net-guard، test:hardening، test:pro، test:pro-ipc، test:media، test:player-engine، test:multiview-overlay، test:secrets، وtest:ui.
+- احتاج test:ssrf إلى تشغيل خارج العزل للسماح بفحص DNS؛ اجتاز بعد ذلك مع حظر عناوين loopback والشبكات الخاصة والسماح بـ example.com.
+- اجتاز اختبار الواجهة بعد تثبيت Playwright وChromium؛ فحوص PRO وظهور PIN وXSS وfailover اجتازت جميعها. تخطى اختبار UI Multiview جزء FFmpeg لعدم توفره في بيئة الاختبار.
+- اجتاز Electron safeStorage اختبارات التشفير وفك التشفير ورفض كلمة المرور الخاطئة وفشل فك التشفير دون تمرير كلمة مرور فارغة. ظهر تحذير deprecation لمسار التوافق القديم.
+- بعد تحديث التبعيات: npm audit = صفر ثغرات (0 منخفضة، 0 متوسطة، 0 عالية، 0 حرجة).
+
+### التبعيات والحدود
+- أضيف تجاوز npm محدد لنسخ minimatch و@electron/asar و@electron/universal وejs ضمن شجرة electron-builder، دون استبدال نسخ minimatch القديمة الأخرى.
+- لم يُختبر بث MPEG-DASH حقيقي أو DRM.
+- latest.yml المحلي غير موقّع ويتطلب مفتاح الإصدار في CI قبل النشر.
+- ملفات Windows غير موقعة Authenticode.
+### إعادة البناء النهائية بعد إصلاح التبعيات (2026-11-27)
+- اكتمل بناء NSIS وPortable داخل dist/v2.0.1 بعد تحديث حزم البناء؛ حجم Setup هو 151,060,767 بايت وحجم Portable هو 134,936,387 بايت.
+- بيان dist/latest.yml يطابق حجم وبصمة SHA-512 لملف Setup، لكنه غير موقّع ويحتاج مفتاح الإصدار في CI.
+- يحتوي app.asar على dash.js ورخصته؛ Playwright خاص بالتطوير ولم يُضمّن في التطبيق.
