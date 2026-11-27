@@ -79,8 +79,8 @@
           ]
         }
       ],
-      "verifyUpdateCodeSignature": true,
-      "forceCodeSigning": true
+      "verifyUpdateCodeSignature": false,
+      "forceCodeSigning": false
     },
     "nsis": {
       "oneClick": false,
@@ -100,3 +100,4 @@
     "electron@45.3.2": true
   }
 }
+
