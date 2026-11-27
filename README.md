@@ -21,7 +21,7 @@
 Everything runs locally. Your data folder is unchanged, so upgrading from 1.x keeps sources, favourites and settings.
 
 
-> **Release-integrity note (2.0.0):** `RELEASE_MANIFEST.yml` in this source archive is a previously signed 1.0.33 manifest and points to the 1.0.33 installer. It is intentionally preserved byte-for-byte because changing signed fields invalidates its Ed25519 signature. The app verifies the signed `latest.yml` attached to the newest published GitHub release; publish a newer signed release before expecting the updater to find an update.
+> **Release-integrity note (2.0.1):** `RELEASE_MANIFEST.yml` in this source archive is a previously signed 1.0.33 manifest and points to the 1.0.33 installer. It is intentionally preserved byte-for-byte because changing signed fields invalidates its Ed25519 signature. The app verifies the signed `latest.yml` attached to the newest published GitHub release; the release workflow generates that manifest from the actual Windows artifacts and requires Authenticode-signed installers.
 
 ## English
 
