@@ -410,3 +410,17 @@
 ### حدود الاختبار
 - تعذر تشغيل `test-manifest-signature.js` في هذه البيئة بسبب عدم تثبيت `node_modules` (المكتبة `js-yaml` غير متاحة).
 تم فحص Syntax لـ 47 ملف JavaScript غير مصغّر. الاختبارات لا تعادل اختبار واجهة فعلية على Windows، ولا تثبت الأداء الطويل أو التوافق مع كل مزودي IPTV.
+
+---
+
+## 10. متابعة الإصدار 2.0.1 (2026-11-27)
+
+### ما تم التحقق منه محلياً
+- تم بناء NSIS وPortable بنجاح في `dist/v2.0.1/`؛ حجم Setup هو 173,281,844 بايت وحجم Portable هو 139,037,957 بايت.
+- يحتوي `app.asar` على `src/renderer/vendor/dash.all.min.js` وملف ترخيص dash.js.
+- نجحت فحوصات `test:manifest-signature` و`test:update-guard` و`test:net-guard` و`test:hardening` و`test:secrets:audit` و`test:secrets` و`test:pro-ipc` و`test:player-engine` و`test:pro`.
+- نجح اختبار Electron الفعلي لتشفير/فك تشفير safeStorage، ورفض كلمة المرور الخاطئة، وعدم إرسال كلمة مرور فارغة عند فشل فك التشفير.
+
+### قيود النشر والتحقق
+- ملف `dist/v2.0.1/latest.yml` الناتج محلياً **غير موقّع** (`not-signed`). يجب أن يوقّعه سير CI بمفتاح Ed25519 السري قبل إرفاقه بإصدار GitHub؛ لم يتم نشر تحديث بهذا البيان.
+- لم يُختبر تشغيل بث MPD/M4S حقيقي أو DRM، وملفات Windows لا تحمل توقيع Authenticode.
