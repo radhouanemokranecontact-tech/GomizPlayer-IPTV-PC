@@ -139,6 +139,8 @@ function register(deps) {
     const cur = normalizeConfig((store.settings || {}).proParental);
     const next = normalizeConfig(p);
     const pinRequired = cur.enabled || next.enabled;
+    // Enabling content filtering without an app lock makes it trivial to disable accidentally.
+    if (next.enabled && !lockSet()) return { ok: false, error: 'lock-required' };
     if (pinRequired && lockSet()) {
       const v = await verifyAppLockPin(String(p.pin || ''));
       if (!v || !v.ok) return { ok: false, error: 'pin', locked: !!(v && v.locked) };
